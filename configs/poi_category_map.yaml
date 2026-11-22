@@ -1,0 +1,67 @@
+home:
+  osm:
+    building: [apartments, residential, house, detached, dormitory]
+    place: [neighbourhood]
+  official_use_contains: [공동주택, 단독주택, 다가구주택, 기숙사]
+work:
+  osm:
+    office: ["*"]
+    building: [office, industrial]
+  official_use_contains: [업무시설, 공장, 판매시설, 근린생활시설]
+home_work:
+  osm:
+    building: [apartments, residential, house, detached]
+  official_use_contains: [공동주택, 단독주택, 다가구주택]
+school:
+  osm:
+    amenity: [school, college, university, kindergarten]
+    building: [school, university, kindergarten]
+  official_use_contains: [교육연구시설, 학교, 유치원]
+shop_grocery:
+  osm:
+    shop: [supermarket, convenience, greengrocer, butcher, seafood, department_store]
+    amenity: [marketplace]
+  official_use_contains: [판매시설, 근린생활시설, 시장]
+shop_other:
+  osm:
+    shop: ["*"]
+  official_use_contains: [판매시설, 근린생활시설]
+eat_out:
+  osm:
+    amenity: [restaurant, cafe, fast_food, food_court, bar, pub]
+  official_use_contains: [근린생활시설, 음식점]
+leisure_outdoor:
+  osm:
+    leisure: [park, garden, playground, pitch, track]
+    tourism: [viewpoint, picnic_site]
+  official_use_contains: [운동시설, 관광휴게시설]
+leisure_indoor:
+  osm:
+    leisure: [fitness_centre, sports_centre, swimming_pool, bowling_alley]
+    amenity: [cinema, theatre, arts_centre, library]
+  official_use_contains: [문화및집회시설, 운동시설]
+social:
+  osm:
+    amenity: [community_centre, social_centre, restaurant, cafe]
+  official_use_contains: [근린생활시설, 문화및집회시설]
+religious:
+  osm:
+    amenity: [place_of_worship]
+  official_use_contains: [종교시설]
+medical:
+  osm:
+    amenity: [hospital, clinic, doctors, pharmacy, dentist]
+    healthcare: ["*"]
+  official_use_contains: [의료시설, 병원]
+personal_business:
+  osm:
+    amenity: [bank, post_office, townhall, public_building]
+    office: [government]
+  official_use_contains: [업무시설, 공공업무시설]
+escort:
+  osm:
+    amenity: [school, kindergarten, hospital, clinic, social_facility]
+  official_use_contains: [교육연구시설, 의료시설, 노유자시설]
+other:
+  osm: {}
+  official_use_contains: []

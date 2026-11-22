@@ -1,0 +1,33 @@
+# Student2 SFT (scripts/train_student2_tripmode.py) on the v2 train split, built by scripts/build_sft_v2.py.
+# The base model is downloaded to the Hugging Face hub cache ($HF_HUB_CACHE or $HF_HOME);
+# add `cache_dir: <path>` under `model:` to use another directory.
+model:
+  name: Qwen/Qwen3.5-2B
+  max_length: 2048
+  qlora_4bit: true
+
+data:
+  train: ${DATA_HOME}/tripchain_1030/processed_v2/sft/student2_tripmode/train.jsonl
+  validation: ${DATA_HOME}/tripchain_1030/processed_v2/sft/student2_tripmode/validation.jsonl
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules: all-linear
+
+training:
+  output_dir: ${OUTPUT_HOME}/tripchain_1030/runs/student2_v2_sft
+  # Two passes over the v2 train split (scripts/build_sft_v2.py).
+  epochs: 2
+  per_device_train_batch_size: 16
+  per_device_eval_batch_size: 16
+  gradient_accumulation_steps: 2
+  learning_rate: 1.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  bf16: true
+  gradient_checkpointing: true
+  packing: false
+  seed: 42
