@@ -120,11 +120,12 @@ def dwell_reward(
 ) -> float:
     """Mean exp(-|dwell error| / tolerance) over LCS-matched activities."""
     if final_home_residual:
-        # The environment sets the last home stay to the rest of the day, so
-        # neither side's final home dwell is a prediction to score.
-        if predicted_sequence[-1:] == ["home"] and len(predicted_sequence) > 1:
+        # The environment sets the last stay (home or, on a day that ends away
+        # from home, any activity) to the rest of the day, so neither side's
+        # final dwell is a prediction to score.
+        if len(predicted_sequence) > 1:
             predicted_sequence, predicted = predicted_sequence[:-1], predicted[:-1]
-        if target_sequence[-1:] == ["home"] and len(target_sequence) > 1:
+        if len(target_sequence) > 1:
             target_sequence, target = target_sequence[:-1], target[:-1]
     if not predicted or not target:
         return 0.0

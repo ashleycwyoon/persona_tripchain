@@ -183,9 +183,11 @@ def optimize_chain(
     optimization = config["optimization"]
     graphhopper = config["graphhopper"]
     day_minutes = float(scheduling["day_minutes"])
-    # The last home stay runs to the end of the survey day; it is the remainder
-    # of the day, not a choice. With this on, its predicted dwell is ignored so
-    # a chain cannot overrun the day by its final home stay.
+    # The last stay runs to the end of the survey day; it is the remainder of
+    # the day, not a choice. With this on, its predicted dwell is ignored so a
+    # chain cannot overrun the day by its final stay. This holds for any final
+    # activity type, as in the ground truth (a day may end away from home, e.g.
+    # at work, when activity_constraints.require_end_home is off).
     final_home_residual = bool(scheduling.get("final_home_residual", False))
     ranks = _mode_ranks(record)
     bicycle_available = "bicycle" in ranks or "personal_mobility" in ranks
@@ -232,7 +234,7 @@ def optimize_chain(
             if index == len(sequence) - 1:
                 stats["terminal_attempts"] += 1
             planned = dwell
-            if final_home_residual and activity_type == "home" and index == len(sequence) - 1:
+            if final_home_residual and index == len(sequence) - 1:
                 planned = max(0.0, day_minutes - state.arrival_min)
             timing = schedule_activity(activity_type, state.arrival_min, planned)
             scheduled = copy.deepcopy(state)

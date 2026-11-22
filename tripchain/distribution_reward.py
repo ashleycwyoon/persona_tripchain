@@ -40,6 +40,13 @@ cells). Occupation is dropped first because it explains mode least; the validati
 log-loss of the smoothed P was best with this order and prior strength 100
 (1.887 bits vs 2.333 for the demographic cells). A rollout's own trips are left
 out of Q per cell, so a trip in another band does not change this trip's Q.
+
+Trip distance (distance_band_rewards, Student2) uses the same reward on each trip's
+distance band, in cells of the trip purpose (the activity the trip arrives at):
+(purpose x occupation x age x gender) -> (purpose x age x gender) -> (purpose x age)
+-> (purpose) -> everyone. The distance-conditioned mode reward cannot fix the
+overall mode shares when the policy picks too many far locations (v2 Pre-RL test:
+10 km+ trips 19% vs GT 11%, <3 km 22% vs 31%), since subway is then right per band.
 """
 
 from __future__ import annotations
@@ -65,15 +72,24 @@ MODE_DISTANCE_LEVELS = (
     ("band",),
     (),
 )
+# Trip distance band; "purpose" is read from demographics["trip_purpose"].
+DISTANCE_LEVELS = (
+    ("purpose", "occupation", "age", "gender"),
+    ("purpose", "age", "gender"),
+    ("purpose", "age"),
+    ("purpose",),
+    (),
+)
 
 
 def cell_values(demographics: dict[str, Any]) -> dict[str, str]:
-    """The cell coordinates of one person (and of one trip, when it carries a distance band)."""
+    """The cell coordinates of one person (and of one trip, when it carries a distance band or a purpose)."""
     return {
         "occupation": str(demographics.get("occupation", "unknown")),
         "age": age_bucket(demographics.get("age", 0)),
         "gender": str(demographics.get("gender", "unknown")),
         "band": str(demographics.get("distance_band", "")),
+        "purpose": str(demographics.get("trip_purpose", "")),
     }
 
 
@@ -240,6 +256,35 @@ def distance_mode_rewards(rollouts: list[tuple], truth: list[tuple], prior_stren
         values = [
             max(-clip, min(clip, math.log(p.prob(demo, mode)) - math.log(q.prob(demo, mode, exclude_by_key=exclude))))
             for demo, mode in own
+        ]
+        rewards.append(sum(values) / len(values))
+    return rewards
+
+
+def distance_band_rewards(rollouts: list[tuple], truth: list[tuple], prior_strength: float, clip: float) -> list[float]:
+    """Mean per-trip distance-band reward in (trip purpose x demographic) cells.
+
+    rollouts / truth: (demographics, trip purposes, trip bands); a trip's purpose is
+    the activity it arrives at. Q for each rollout leaves out its own trips per cell.
+    """
+
+    def items(demo, purposes, bands):
+        return [({**demo, "trip_purpose": purpose}, band) for purpose, band in zip(purposes, bands)]
+
+    true_items = [item for demo, purposes, bands in truth for item in items(demo, purposes, bands)]
+    policy = [items(demo, purposes, bands) for demo, purposes, bands in rollouts]
+    vocabulary = {band for _, band in true_items} | {band for own in policy for _, band in own}
+    p = CellDistribution(true_items, vocabulary, prior_strength, levels=DISTANCE_LEVELS)
+    q = CellDistribution([item for own in policy for item in own], vocabulary, prior_strength, levels=DISTANCE_LEVELS)
+    rewards = []
+    for own in policy:
+        if not own:
+            rewards.append(0.0)
+            continue
+        exclude = q.own_counts_by_key(own)
+        values = [
+            max(-clip, min(clip, math.log(p.prob(demo, band)) - math.log(q.prob(demo, band, exclude_by_key=exclude))))
+            for demo, band in own
         ]
         rewards.append(sum(values) / len(values))
     return rewards

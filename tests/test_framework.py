@@ -172,6 +172,23 @@ def test_final_home_residual_fills_the_day_instead_of_overrunning():
     assert selected["activities"][1]["end_min"] - selected["activities"][1]["start_min"] == 600
 
 
+def test_final_residual_also_ends_a_day_away_from_home():
+    record = {
+        "person_id": "p1",
+        "demographics": {"can_drive": "no"},
+        "activity_sequence": ["home", "work"],
+        "location_dwell_by_activity": [{"dwell_time_min": 1000}, {"dwell_time_min": 900}],
+        "mode_preference": [{"rank": 1, "mode": "walk", "count": 1}],
+    }
+    layers = [[poi("h")], [poi("w")]]
+    config = optimizer_config(["walk"])
+    config["scheduling"]["final_home_residual"] = True
+    selected, _ = optimize_chain(record, layers, FakeClient(), config)
+    assert selected is not None
+    assert selected["day_end_min"] == 1440
+    assert selected["activities"][-1]["activity_type"] == "work"
+
+
 def test_dwell_reward_skips_final_home_when_it_is_residual():
     from tripchain.rewards import dwell_reward
 
@@ -1112,3 +1129,20 @@ def test_mode_fallback_penalty_is_a_share_of_the_day_legs():
     old = {"rewards": {"feasibility": {**cfg["rewards"]["feasibility"], "mode_per_violation": 0.5}}}
     del old["rewards"]["feasibility"]["mode_share_penalty"]
     assert feasibility_reward(day(4, 2), old) == 0.0
+
+
+def test_distance_band_reward_moves_far_work_trips_closer():
+    from tripchain.distribution_reward import distance_band_rewards
+
+    demo = {"occupation": "office_worker", "age": 40, "gender": "female"}
+    # GT: work trips mostly short; policy: half of the work trips far.
+    truth = [(demo, ["work", "home"], ["<3km", "<3km"])] * 8 + [(demo, ["work", "home"], ["10km+", "10km+"])] * 2
+    near = (demo, ["work", "home"], ["<3km", "<3km"])
+    far = (demo, ["work", "home"], ["10km+", "10km+"])
+    rewards = distance_band_rewards([near, far] * 5, truth, prior_strength=1.0, clip=3.0)
+    assert rewards[0] > 0 > rewards[1]
+    # purpose matters: far shopping trips are judged in the shopping cell, not by work trips
+    shop_truth = truth + [(demo, ["shopping", "home"], ["10km+", "10km+"])] * 10
+    shop = (demo, ["shopping", "home"], ["10km+", "10km+"])
+    r = distance_band_rewards([near, far] * 5 + [shop] * 10, shop_truth, prior_strength=1.0, clip=3.0)
+    assert r[-1] > r[1]

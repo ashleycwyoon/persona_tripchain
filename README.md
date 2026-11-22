@@ -37,7 +37,7 @@ flowchart TD
     S2["Student2<br/>reasoning2, location and dwell per activity, mode per trip"] --> ENV
     ENV["Environment (not learned)<br/>POI grounding, GraphHopper routing, scheduling, hard feasibility"] --> DAY
     DAY["Realized day + decision trace"] --> R
-    R["Rewards<br/>individual: activity, location, dwell, trip mode, feasibility, start time<br/>distribution: sequence, trip mode, first departure"]
+    R["Rewards<br/>individual: activity, location, dwell, trip mode, feasibility, start time<br/>distribution: sequence, trip mode, first departure, trip distance"]
     R -->|"GRPO update, train split"| S1
     R -->|"GRPO update, train split"| S2
     DAY -->|"infeasible, test time only"| REF
@@ -85,10 +85,16 @@ are written in the order below (reasons before the decisions they explain).
   realized (no route, or the car or bicycle is not at the origin) the trip falls back
   to another mode and counts as a mode violation.
 - **Schedule.** An activity starts on arrival and lasts its predicted dwell. The day
-  runs 1,440 minutes from 03:00; the last home stay is the rest of the day.
-- **Hard feasibility.** Every trip is routable, a private car or bicycle is where the
-  traveler left it, and the day ends within 1,440 minutes. A day with an activity
-  outside Seoul cannot be grounded and is set aside as `outside_poi_coverage`.
+  runs 1,440 minutes from 03:00; the last stay, whatever its type, is the rest of the
+  day.
+- **Hard feasibility.** The day starts at home, every trip is routable, a private car
+  or bicycle is where the traveler left it, and the day ends within 1,440 minutes. A
+  day with an activity outside Seoul cannot be grounded and is set aside as
+  `outside_poi_coverage`.
+- **End of the day.** 3.7% of the ground-truth days end away from home (for example
+  at work), so the evaluation configs and the later train configs accept such days
+  (`activity_constraints.require_end_home: false`). The two round-1 train configs
+  still require the day to end at home, as in the reference round-1 runs.
 
 ### Rewards and GRPO
 
@@ -116,12 +122,16 @@ people (occupation, age bucket, gender), `clip(log P - log Q, ±3)` compares the
 `Q` the policy generates with the share `P` in the train ground truth. Student1
 receives it for its activity sequence, Student2 for its trip modes and its first
 departure hour. Trip-mode cells can also carry the trip's distance band
-(`trip_mode_cells: distance`).
+(`trip_mode_cells: distance`). With `trip_distance` set, Student2 also receives it for
+the distance band of each trip, in cells of the trip purpose (the activity the trip
+arrives at): the mode reward alone cannot correct a policy that picks too many far
+destinations, because a far trip by subway is right within its own distance band.
 
-GRPO groups are two-level: every train person has two Student1 answers, and each of
-them has two Student2 answers. Student2 advantages compare answers to one identical
-prompt; Student1 advantages compare a person's Student1 answers by their mean
-return. The update is a clipped, reference-regularized policy-gradient step
+GRPO groups are two-level: every train person has several Student1 answers (two in
+round 1, three in `scripts/run_v2_round2seq.sh`), and each of them has two Student2
+answers. Student2 advantages compare answers to one identical prompt; Student1
+advantages compare a person's Student1 answers by their mean return. The update is a
+clipped, reference-regularized policy-gradient step
 (`scripts/train_group_relative.py`).
 
 ## 2. Repository layout
@@ -153,7 +163,7 @@ personaTC/
 | `environment.py` | The environment: grounding, routing, scheduling, violation counts |
 | `rewards.py` | Individual reward components and each Student's discounted return |
 | `distribution_reward.py` | Population-level rewards on smoothed demographic cells |
-| `trip_distance.py` | Distance band of a trip, for distance-conditioned trip-mode cells |
+| `trip_distance.py` | Distance band of a trip, for distance-conditioned trip-mode cells and the trip-distance reward |
 | `trip_modes.py` | Main mode of a KTDB trip, and the person-level mode ranking derived from trips |
 | `rollout.py` | One rollout row: decision trace, environment result, rewards, status |
 | `refinement.py` | Bounded refinement of an infeasible day (Lv.1, Lv.2, Lv.3) |
@@ -200,6 +210,11 @@ personaTC/
 | `run_v2_round2.sh` | Optional: a second GRPO round starting from the round-1 adapters |
 | `run_v2_distmode.sh` | Optional: round 1 with the distance-conditioned trip-mode reward |
 | `run_v2_distmode_weight.sh` | Optional: sweep of the trip-mode distribution weight |
+| `run_v2_tripdist.sh` | Optional: adds the trip-distance reward; only Student2 is retrained |
+| `run_v2_noendhome_baselines.sh` | Step 14: baselines re-rolled with days allowed to end away from home |
+| `run_v2_seqboost.sh` | Step 14: SeqBoost, both Students retrained with a stronger sequence reward and the trip-distance reward |
+| `run_v2_round2seq.sh` | Step 14: GRPO round 2 from the SeqBoost adapters, three Student1 answers per person |
+| `run_v2_round2bal.sh` | Step 14: the same round 2 with lower distribution weights, reusing the round2seq rollouts |
 
 ### `configs/`
 
@@ -208,6 +223,10 @@ personaTC/
 | `student1_v2_sft.yaml`, `student2_v2_sft.yaml` | SFT settings of the two Students |
 | `framework_grpo_train_v2.yaml` | Train split: inference, environment and reward settings for GRPO rollouts |
 | `framework_grpo_train_v2_distmode.yaml` | The same with distance-conditioned trip-mode cells |
+| `framework_grpo_train_v2_tripdist.yaml` | Distance-mode config with trip-mode weight 0.94 and the trip-distance reward |
+| `framework_grpo_train_v2_seqboost.yaml` | SeqBoost: sequence weight 1.64, trip-distance weight 1.04 |
+| `framework_grpo_train_v2_round2seq.yaml` | Round 2 from the SeqBoost adapters, first-departure weight 0.86 |
+| `framework_grpo_train_v2_round2bal.yaml` | Round 2 from the SeqBoost adapters with lower distribution weights |
 | `framework_v2_validation.yaml`, `framework_v2_test.yaml` | Evaluation on the validation and test splits |
 | `poi_category_map.yaml` | Which OSM tags and official building uses can host each activity type |
 
@@ -279,7 +298,7 @@ $OUTPUT_HOME/
 └── tripchain_1030/
     ├── teacher_relabel_v2/                        Teacher labels for changed days (step 5)
     ├── runs/student1_v2_sft, runs/student2_v2_sft SFT adapters (step 7)
-    └── v2/                                        rollouts, GRPO adapters, analyses (steps 10 to 13)
+    └── v2/                                        rollouts, GRPO adapters, analyses (steps 10 to 14)
 ```
 
 Two inputs are not produced by this repository and must be supplied:
@@ -294,13 +313,14 @@ Two inputs are not produced by this repository and must be supplied:
 ## 5. Tutorial: running the full framework
 
 Run every command from the repository root. Steps 1 to 7 build the data and the SFT
-Students once; steps 8 to 12 are the framework itself. Long steps are safe to
-interrupt: re-running the same command continues where it stopped.
+Students once; steps 8 to 12 are the framework itself, and steps 13 and 14 are the
+experiments built on it. Long steps are safe to interrupt: re-running the same
+command continues where it stopped.
 
 ### Step 0. Setup
 
 ```bash
-git clone <this repository> personaTC && cd personaTC
+git clone git@github.com:ashleycwyoon/persona_tripchain.git personaTC && cd personaTC
 pip install -e ".[train,dev]"
 
 export DATA_HOME=~/data OUTPUT_HOME=~/outputs          # the defaults
@@ -310,7 +330,7 @@ V2=$OUTPUT_HOME/tripchain_1030/v2
 UPSTREAM=third_party/tripchain_1015
 TEACHER=$UPSTREAM/persona-rationale-multi-country-qwen35
 
-python -m pytest -q                                     # 39 tests, no GPU or data needed
+python -m pytest -q                                     # 41 tests, no GPU or data needed
 ```
 
 ### Step 1. Upstream preprocessing (v1 split)
@@ -456,7 +476,9 @@ python scripts/measure_distribution_weights.py $V2/grpo_train/s1_seed*/s2_sample
 Copy the three `weights` into `rewards.distribution` (`sequence`, `trip_mode`,
 `first_departure`) of `configs/framework_grpo_train_v2.yaml`. They make the
 distribution rewards vary as much within a group as the individual rewards do. The
-values in the repository (0.82, 1.04, 0.43) were measured on the reference run.
+values in the repository (0.82, 1.04, 0.43) were measured on the reference run. When
+the config sets `distribution.trip_distance`, the output also has a `trip_distance`
+weight, which gives that term the same spread as the first-departure term.
 
 ### Step 12. GRPO and evaluation
 
@@ -486,12 +508,47 @@ the round-1 results.
 ```bash
 bash scripts/run_v2_round2.sh                 # second GRPO round                     -> $V2/round2/
 bash scripts/run_v2_distmode.sh               # distance-conditioned trip-mode reward -> $V2/distmode/
-bash scripts/run_v2_distmode_weight.sh 0.75 0 # trip-mode weight 0.75 on GPU 0        -> $V2/distmode_w0.75/
+bash scripts/run_v2_distmode_weight.sh 0.94 0 # trip-mode weight 0.94 on GPU 0        -> $V2/distmode_w0.94/
+bash scripts/run_v2_tripdist.sh 1.04 0        # trip-distance weight 1.04 on GPU 0    -> $V2/tripdist_w1.04/
 ```
 
-`run_v2_round2.sh` and `run_v2_distmode_weight.sh` generate their train config in
-`configs/` on first use. Each ends with paired bootstrap comparisons
-(`bootstrap_*.json`) and distribution figures against the earlier populations.
+`run_v2_round2.sh`, `run_v2_distmode_weight.sh` and `run_v2_tripdist.sh` generate
+their train config in `configs/` on first use. Each ends with paired bootstrap
+comparisons (`bootstrap_*.json`) and distribution figures against the earlier
+populations. The two sweep scripts (`run_v2_distmode_weight.sh`, `run_v2_tripdist.sh`)
+retrain only Student2 and evaluate on the validation split; run them with
+`SPLITS="test validation"` to include the held-out test split. `run_v2_tripdist.sh`
+compares against the trip-mode weight 0.94, so run that sweep first.
+
+### Step 14. SeqBoost and round 2
+
+These four pipelines build on each other and on step 13
+(`run_v2_distmode_weight.sh 0.94`, a comparison baseline). They need GPUs 0 and 1
+and evaluate on the validation split only; the test split is left for the final
+configuration.
+
+```bash
+bash scripts/run_v2_noendhome_baselines.sh 0  # baselines under the current environment -> $V2/noendhome/
+bash scripts/run_v2_seqboost.sh               # SeqBoost                                -> $V2/seqboost/
+bash scripts/run_v2_round2seq.sh              # round 2 from SeqBoost                   -> $V2/round2seq/
+bash scripts/run_v2_round2bal.sh              # round 2 with lower distribution weights -> $V2/round2bal/
+```
+
+| Pipeline | What it does |
+|---|---|
+| `run_v2_noendhome_baselines.sh` | Rolls out, refines and evaluates the Pre-RL, Round 1 and trip-mode 0.94 validation answers again with `require_end_home: false`. The Student answers are reused. The later pipelines compare against these files. |
+| `run_v2_seqboost.sh` | Rolls out again the round-1 train rollouts that were rejected for ending away from home, then retrains both Students from the SFT adapters with sequence weight 1.64 and trip-distance weight 1.04. |
+| `run_v2_round2seq.sh` | New train rollouts from the SeqBoost adapters (three Student1 answers per person, two Student2 answers each), then a GRPO round that starts from, and is regularized towards, those adapters. First-departure weight 0.86. |
+| `run_v2_round2bal.sh` | The same round 2 on the same rollouts with lower distribution weights (sequence 1.20, trip mode 0.80, first departure 0.60), rescored by `prepare_policy_updates.py --rescore`. |
+
+The three training pipelines write the same layout as round 1 into their own folder:
+`grpo/student{1,2}/final`, `post_rl_validation/`, and `analysis/` with `metrics.json`,
+the paired bootstraps and the figures. `noendhome/` holds
+`<name>_validation/{rollouts_initial,rollouts}.jsonl` and `analysis/<name>_validation/`
+for `pre_rl`, `round1` and `distmode_w0.94`. The reasons for the weights are written
+next to them in the configs.
+The two round-2 configs read the SeqBoost adapters from
+`${OUTPUT_ROOT}/v2/seqboost/grpo`, so these pipelines expect the default `V2_ROOT`.
 
 ### Running individual steps by hand
 
@@ -544,9 +601,10 @@ Framework configs (`configs/framework_*.yaml`):
 | `inference` | `base_model`, `temperature`, `top_p`, `seed`, `output_order` (must match how the adapters were trained), `student2_resample_attempts`, `student1_repair_rounds` |
 | `poi_sampling` | `master_pool_size`, `active_pool_size`, `seed` |
 | `graphhopper` | `base_url`, `service_date`, `modes`, `bike_walk_speedup` |
-| `scheduling` | `day_minutes`, `final_home_residual` |
+| `scheduling` | `day_minutes`, `final_home_residual` (the last stay of the day, of any type, lasts until the day ends) |
+| `activity_constraints` | `require_start_home`, `require_end_home` |
 | `optimization` | state pruning limits, selection temperature and seed, `mode_fallback_penalty` |
-| `rewards` | `weights`, tolerances, `future_discount`, `feasibility` penalties, and in train configs `distribution` (weights, smoothing, clip, `trip_mode_cells`) |
+| `rewards` | `weights`, tolerances, `future_discount`, `feasibility` penalties, and in train configs `distribution` (weights `sequence`, `trip_mode`, `first_departure`, `trip_distance`; smoothing, clip, `trip_mode_cells`) |
 
 ## 8. Development
 

@@ -51,12 +51,14 @@ graphhopper:
 scheduling:
   day_minutes: 1440
   day_origin_hour: 3
-  # The last home stay is the rest of the day (1440 - arrival), not a predicted dwell.
+  # The last stay (any activity type) is the rest of the day (1440 - arrival), not a predicted dwell.
   final_home_residual: true
 
 activity_constraints:
   require_start_home: true
-  require_end_home: true
+  # Off: 3.7% of ground-truth days end away from home (e.g. at work);
+  # the final stay of any type runs to the end of the day (final_home_residual).
+  require_end_home: false
 
 optimization:
   max_states_per_signature: 48

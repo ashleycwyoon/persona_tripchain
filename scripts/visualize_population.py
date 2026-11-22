@@ -48,7 +48,7 @@ DAY = 1440
 # Populations in drawing order: the Ground Truth, then the --population labels
 # (set in main()). Model populations take MODEL_COLORS in the order given.
 POPS: tuple[str, ...] = ("Ground Truth",)
-MODEL_COLORS = ("#3b7dd8", "#e8833a", "#2f8a55", "#8e5bb5")
+MODEL_COLORS = ("#3b7dd8", "#e8833a", "#2f8a55", "#8e5bc0")
 COLORS = {"Ground Truth": "#4d4d4d", "Teacher": "#4d4d4d"}
 MODES = ["walk", "bus", "subway", "car_driver", "car_passenger", "taxi", "bicycle", "other_bus"]
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"

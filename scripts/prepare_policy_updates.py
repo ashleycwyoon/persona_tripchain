@@ -43,7 +43,10 @@ passed on to Student1: it is decided by Student2's sampling, not by the
 sequence. With `first_departure` set, Student2 also gets that weight x log P/Q
 of its first departure hour (= its first home dwell), in cells that add the
 first out-of-home activity. With `trip_mode_cells: distance` the trip-mode cells
-also carry each trip's distance band (prior `trip_mode_prior_strength`).
+also carry each trip's distance band (prior `trip_mode_prior_strength`). With
+`trip_distance` set, Student2 also gets that weight x the mean log P/Q of its trips'
+distance bands in trip-purpose x demographic cells (prior
+`trip_distance_prior_strength`).
 
 This does not silently treat a single sample as GRPO: groups smaller than
 --min-group-size are skipped and counted.
@@ -69,6 +72,7 @@ from tripchain.distribution_reward import (  # noqa: E402
     build_departure_rewards,
     build_distribution_rewards,
     departure_hour,
+    distance_band_rewards,
 )
 from tripchain.rewards import score_rollout  # noqa: E402
 
@@ -142,11 +146,13 @@ def add_distribution_rewards(rows: list[dict], config: dict, targets: dict[str, 
     # trip_mode_cells: distance -> trip-mode cells add the trip's distance band
     # (tripchain/trip_distance.py), from GT dong codes and Student2's own locations.
     distance = settings.get("trip_mode_cells", "demographic") == "distance"
-    if distance:
-        # Imported here because it loads pandas and the POI catalog, which only this option needs.
+    distance_weight = float(settings.get("trip_distance", 0.0))
+    if distance or distance_weight:
+        # Imported here because it loads pandas and the POI catalog, which only these options need.
         from tripchain.trip_distance import TripDistance
 
         bands = TripDistance.from_config(config)
+    if distance:
         truth = [
             (*item, bands.day_bands(targets[person_id].get("activities") or []))
             for item, person_id in zip(truth, [pid for pid in targets if pid in people])
@@ -198,7 +204,40 @@ def add_distribution_rewards(rows: list[dict], config: dict, targets: dict[str, 
             float(settings.get("prior_strength", 20.0)),
             float(settings.get("clip", 3.0)),
         )
-    for row, mode_reward, departure_reward in zip(rows, mode_rewards, departure_rewards):
+    distance_rewards = [0.0] * len(rows)
+    if distance_weight:
+        # A trip's purpose is the activity it arrives at.
+        distance_truth = []
+        for person_id, target in targets.items():
+            activities = target.get("activities") or []
+            if person_id in people and len(activities) > 1:
+                distance_truth.append(
+                    (
+                        people[person_id].get("demographics", people[person_id]),
+                        [str(item["activity_type"]) for item in activities[1:]],
+                        bands.day_bands(activities),
+                    )
+                )
+        generated_distance = []
+        for row in rows:
+            student1 = row["decision_trace"]["student1"]
+            policy = row["decision_trace"]["environment"].get("policy_output") or {}
+            sequence = policy.get("activity_sequence") or student1["output"]["activity_sequence"]
+            spatial = policy.get("location_dwell_by_activity") or []
+            generated_distance.append(
+                (
+                    student1["input"]["demographics"],
+                    [str(activity) for activity in sequence[1 : len(spatial)]],
+                    bands.day_bands(spatial),
+                )
+            )
+        distance_prior = settings.get("trip_distance_prior_strength", settings.get("prior_strength", 20.0))
+        distance_rewards = distance_band_rewards(
+            generated_distance, distance_truth, float(distance_prior), float(settings.get("clip", 3.0))
+        )
+    for row, mode_reward, departure_reward, distance_reward in zip(
+        rows, mode_rewards, departure_rewards, distance_rewards
+    ):
         sequence_reward = sequence_rewards[branch_index[(str(row["person_id"]), branch_key(row))]]
         row["rewards"]["components"]["distribution_sequence"] = sequence_reward
         row["rewards"]["components"]["distribution_trip_mode"] = mode_reward
@@ -208,12 +247,16 @@ def add_distribution_rewards(rows: list[dict], config: dict, targets: dict[str, 
         if departure_weight:
             row["rewards"]["components"]["distribution_first_departure"] = departure_reward
             returns["student2"] = float(returns["student2"]) + departure_weight * departure_reward
+        if distance_weight:
+            row["rewards"]["components"]["distribution_trip_distance"] = distance_reward
+            returns["student2"] = float(returns["student2"]) + distance_weight * distance_reward
     return {
         "distribution_truth_people": len(truth),
         "distribution_branches": len(branches),
         "distribution_sequence_mean": sum(sequence_rewards) / max(1, len(sequence_rewards)),
         "distribution_trip_mode_mean": sum(mode_rewards) / max(1, len(mode_rewards)),
         "distribution_first_departure_mean": sum(departure_rewards) / max(1, len(departure_rewards)),
+        "distribution_trip_distance_mean": sum(distance_rewards) / max(1, len(distance_rewards)),
     }
 
 

@@ -11,7 +11,8 @@
 #
 # Run after scripts/run_v2_distmode.sh. Environment: PYTHON (interpreter, default
 # "python"), V2_ROOT (round-1 output directory, default $OUTPUT_HOME/tripchain_1030/v2),
-# INFERENCE_CPU_THREADS (default 4).
+# INFERENCE_CPU_THREADS (default 4), SPLITS (default "validation"; "test validation"
+# also generates, evaluates and plots the held-out test split).
 set -euo pipefail
 main() {
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -29,6 +30,9 @@ declare -A GT=([test]=$DATA_V2/test/ground_truth_tripmode.jsonl
 UPD="$OUT/updates"; A1="$V2/grpo/student1/final"; A2="$OUT/grpo/student2/final"
 STATE="$OUT/state"; LOGS="$OUT/logs"; LOCK="$V2/.rollout.lock"
 mkdir -p "$STATE" "$LOGS" "$UPD" "$OUT/grpo/student2" "$OUT/analysis"
+# Splits to generate, evaluate and plot: validation only by default (test is held out);
+# SPLITS="test validation" runs both.
+SPLITS="${SPLITS:-validation}"
 export INFERENCE_CPU_THREADS="${INFERENCE_CPU_THREADS:-4}" PYTHONUNBUFFERED=1
 
 step() {
@@ -60,7 +64,7 @@ step grpo_student2 sh -c "CUDA_VISIBLE_DEVICES=$GPU $PY scripts/train_group_rela
   --adapter $SFT2 --output $OUT/grpo/student2 --epochs 1.0 --max-steps -1 --learning-rate 1e-5 \
   --reference-penalty 0.02 --save-steps 0 --batch-size 2 --grad-accum 16 && rm -f $OUT/grpo/student2/checkpoint-*/optimizer.pt"
 
-for split in test validation; do
+for split in $SPLITS; do
   mkdir -p "$OUT/post_rl_$split"
   [ -e "$STATE/copy_s1_$split.done" ] || { cp "$V2/post_rl_$split/student1.jsonl" "$OUT/post_rl_$split/"; touch "$STATE/copy_s1_$split.done"; }
 done
@@ -78,17 +82,24 @@ refine() { flock "$LOCK" $PY scripts/refine_infeasible.py --config "${CFG[$1]}" 
              --input "$OUT/post_rl_$1/rollouts_initial.jsonl" --output "$OUT/post_rl_$1/rollouts.jsonl" \
              --student1-adapter "$A1" --student2-adapter "$A2" --level1-attempts 1 --workers 4 --gpus "$GPU"; }
 
-# Test rollouts (CPU) overlap validation generation (GPU).
-step post_test_s2 gen2 test
-( step post_test_repair repair test && step roll_post_test roll test ) & T=$!
-step post_validation_s2 gen2 validation
-step post_validation_repair repair validation
-wait "$T"
-( step roll_post_validation roll validation ) & V=$!
-step refine_post_test refine test
-wait "$V"
-step refine_post_validation refine validation
-for split in test validation; do
+if [ "$SPLITS" = validation ]; then
+  step post_validation_s2 gen2 validation
+  step post_validation_repair repair validation
+  step roll_post_validation roll validation
+  step refine_post_validation refine validation
+else
+  # Test rollouts (CPU) overlap validation generation (GPU).
+  step post_test_s2 gen2 test
+  ( step post_test_repair repair test && step roll_post_test roll test ) & T=$!
+  step post_validation_s2 gen2 validation
+  step post_validation_repair repair validation
+  wait "$T"
+  ( step roll_post_validation roll validation ) & V=$!
+  step refine_post_test refine test
+  wait "$V"
+  step refine_post_validation refine validation
+fi
+for split in $SPLITS; do
   d="$OUT/post_rl_$split"
   step "eval_post_$split" $PY scripts/evaluate_population.py --ground-truth "${GT[$split]}" \
     --student1 "$d/student1.jsonl" --student2 "$d/student2.jsonl" --rollouts "$d/rollouts.jsonl" \

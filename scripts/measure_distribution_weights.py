@@ -12,6 +12,10 @@ its group, and the RMS over all groups is its spread.
   (their within-group correlation is printed; ~0 makes the split exact):
   trip_mode = RMS(individual S2) / (sqrt(2) RMS(mode)), first_departure likewise.
 
+With distribution.trip_distance in the config, its spread and correlations are
+printed as well, and `trip_distance` is set to give it the same spread as the
+first-departure term (weights of the other terms are unchanged by it).
+
 Rollouts are rescored with the --config rewards first (as prepare_policy_updates.py
 --rescore). Prints JSON with the spreads and the weights; copy the weights into
 `rewards.distribution` of the GRPO train config.
@@ -59,7 +63,10 @@ def main() -> None:
     rows = [r for branches in people.values() for rs in branches.values() for r in rs]
 
     config = load_config(args.config)
+    has_distance = bool(config["rewards"]["distribution"].get("trip_distance"))
     config["rewards"]["distribution"].update(sequence=1.0, trip_mode=1.0, first_departure=1.0)
+    if has_distance:
+        config["rewards"]["distribution"]["trip_distance"] = 1.0
     targets = rows_by_id(resolve(config["paths"]["ground_truth_reference"]))
     ppu.rescore(rows, config, targets)
     # Individual returns (neutralized as in prepare_policy_updates.py) before the
@@ -78,7 +85,7 @@ def main() -> None:
     summary = ppu.add_distribution_rewards(rows, config, targets)
 
     c = lambda r, k: float(r["rewards"]["components"][k])
-    s1_ind, s1_seq, s2_ind, s2_mode, s2_dep = [], [], [], [], []
+    s1_ind, s1_seq, s2_ind, s2_mode, s2_dep, s2_dist = [], [], [], [], [], []
     for branches in people.values():
         for rs in branches.values():
             if len(rs) < args.min_group_size:
@@ -86,6 +93,8 @@ def main() -> None:
             s2_ind += ppu.centered([s2_individual[id(r)] for r in rs])
             s2_mode += ppu.centered([c(r, "distribution_trip_mode") for r in rs])
             s2_dep += ppu.centered([c(r, "distribution_first_departure") for r in rs])
+            if has_distance:
+                s2_dist += ppu.centered([c(r, "distribution_trip_distance") for r in rs])
         if len(branches) < args.min_group_size:
             continue
         brs = list(branches.values())
@@ -108,6 +117,16 @@ def main() -> None:
         "trip_mode": spread["s2_individual"] / (math.sqrt(2) * spread["s2_trip_mode"]),
         "first_departure": spread["s2_individual"] / (math.sqrt(2) * spread["s2_first_departure"]),
     }
+    if has_distance:
+        spread.update(
+            s2_trip_distance=rms(s2_dist),
+            s2_corr_individual_distance=corr(s2_ind, s2_dist),
+            s2_corr_mode_distance=corr(s2_mode, s2_dist),
+            s2_corr_departure_distance=corr(s2_dep, s2_dist),
+        )
+        weights["trip_distance"] = (
+            weights["first_departure"] * spread["s2_first_departure"] / spread["s2_trip_distance"]
+        )
     print(
         json.dumps(
             {
