@@ -1,5 +1,5 @@
 # Trip distance reward: the distance-mode config (framework_grpo_train_v2_distmode.yaml) with
-# trip_mode 0.94 plus distribution.trip_distance, and require_end_home off.
+# trip_mode 0.94 plus distribution.trip_distance.
 # scripts/run_v2_tripdist.sh writes the trip_distance weight it is given into a copy of this file;
 # scripts/measure_distribution_weights.py with this config prints the measured weight.
 # v2 data (scripts/rebuild_ground_truth_v2.py, 70/10/20 split) and v2 SFT adapters.

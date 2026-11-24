@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Re-run the validation rollouts of the comparison baselines with
-# activity_constraints.require_end_home off (configs/framework_v2_validation.yaml), so
-# later runs are compared against baselines under the same environment.
-# The Student outputs are reused; only the environment (and so refinement) changes:
-# days that end away from home are now feasible, and the final stay of any type
-# runs to the end of the day.
+# Roll out, refine and evaluate the validation answers of the comparison baselines with
+# the evaluation config (configs/framework_v2_validation.yaml) into one folder, v2/noendhome,
+# which the later pipelines compare against. The Student outputs are reused. The folder name
+# is historical: these files were first made when the earlier results still required every
+# day to end at home.
 # Baselines: Pre-RL (v2/pre_rl_validation), Round 1 (v2/post_rl_validation) and the
 # distance-mode weight 0.94 (v2/distmode_w0.94/post_rl_validation).
 # Usage: bash scripts/run_v2_noendhome_baselines.sh [gpu for refinement, default 0]

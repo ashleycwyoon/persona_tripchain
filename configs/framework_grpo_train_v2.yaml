@@ -54,12 +54,14 @@ graphhopper:
 scheduling:
   day_minutes: 1440
   day_origin_hour: 3
-  # The last home stay is the rest of the day (1440 - arrival), not a predicted dwell.
+  # The last stay (any activity type) is the rest of the day (1440 - arrival), not a predicted dwell.
   final_home_residual: true
 
 activity_constraints:
   require_start_home: true
-  require_end_home: true
+  # Off: 3.7% of ground-truth days end away from home (e.g. at work);
+  # the final stay of any type runs to the end of the day (final_home_residual).
+  require_end_home: false
 
 optimization:
   max_states_per_signature: 48
@@ -87,6 +89,8 @@ rewards:
     start_time: 1.0
   # Population-level term (tripchain/distribution_reward.py, leave-one-out Q), added in
   # scripts/prepare_policy_updates.py. P = v2 train ground truth.
+  # The reference rollouts behind these numbers still required every day to end at home;
+  # measure again on your own rollouts (README, tutorial step 3).
   # Weights: individual : distribution = 50:50 in within-group spread (RMS), measured by
   # scripts/measure_distribution_weights.py on the v2 SFT train rollouts (18,574 people x 4):
   # S1 individual 0.551 / sequence 0.670; S2 individual 0.218, trip_mode 0.148 and

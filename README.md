@@ -189,7 +189,7 @@ results of earlier ones. All of them evaluate on the validation split.
 | `bash scripts/run_v2_distmode.sh` | Round 1 with trip-mode cells that include the distance band | `distmode/` |
 | `bash scripts/run_v2_distmode_weight.sh 0.94 0` | Trip-mode weight 0.94 on GPU 0; only Student2 is retrained | `distmode_w0.94/` |
 | `bash scripts/run_v2_tripdist.sh 1.04 0` | Adds the trip-distance reward with weight 1.04 | `tripdist_w1.04/` |
-| `bash scripts/run_v2_noendhome_baselines.sh 0` | Evaluates the earlier answers again with days allowed to end away from home | `noendhome/` |
+| `bash scripts/run_v2_noendhome_baselines.sh 0` | Rolls out and evaluates the Pre-RL, round 1 and trip-mode 0.94 validation answers into one folder, the baselines the later pipelines compare against | `noendhome/` |
 | `bash scripts/run_v2_seqboost.sh` | SeqBoost: sequence weight 1.64 and trip-distance weight 1.04, both Students retrained | `seqboost/` |
 | `bash scripts/run_v2_round2seq.sh` | Round 2 from SeqBoost with three Student1 answers per person | `round2seq/` |
 | `bash scripts/run_v2_round2bal.sh` | The same round 2 with lower distribution weights | `round2bal/` |
@@ -199,8 +199,8 @@ results of earlier ones. All of them evaluate on the validation split.
 
 Notes:
 
-- 3.7% of the ground-truth days end away from home. From `run_v2_tripdist.sh` on,
-  and in the evaluation configs, such days are accepted (`require_end_home: false`).
+- 3.7% of the ground-truth days end away from home, so every config accepts such days
+  (`require_end_home: false`).
 - The two sweep scripts take a weight and a GPU. `SPLITS="test validation"` adds the
   test split.
 - Run `python scripts/build_context_v2.py` once before the two context pipelines.

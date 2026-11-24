@@ -2,8 +2,9 @@
 # SeqBoost: Student1 sequence-pattern weight 1.64 plus the trip-distance Student2 reward
 # (1.04), configs/framework_grpo_train_v2_seqboost.yaml. Both Students are retrained
 # from the v2 SFT adapters; evaluation on the validation split only.
-# - require_end_home is off: the v2 train rollouts that failed END_ACTIVITY_NOT_HOME
-#   are rolled again under the new environment and merged (all others are reused),
+# - the v2 train rollouts are reused. Rollouts made by an earlier version of the configs,
+#   which rejected days ending away from home (END_ACTIVITY_NOT_HOME), are rolled again
+#   and merged; with the current configs there are none and the files are copied,
 # - Student1 (GPU1) and Student2 (GPU0) are trained side by side from the v2 SFT adapters,
 # - then validation: Student1 -> Student2 (both GPUs) -> repair -> rollouts -> refinement
 #   -> evaluation, bootstraps and figures against the no-end-home baselines (v2/noendhome).
@@ -40,7 +41,7 @@ step() {
 }
 echo "v2 seqboost -> $OUT ($(date))"
 
-# 1. Re-roll the END_ACTIVITY_NOT_HOME train rollouts and merge.
+# 1. Re-roll train rollouts that failed END_ACTIVITY_NOT_HOME (older configs only) and merge.
 for s1 in 42 43; do for s2 in 1 2; do
   src="$V2/grpo_train/s1_seed$s1/s2_sample$s2"; dst="$OUT/grpo_train/s1_seed$s1/s2_sample$s2"; mkdir -p "$dst/reroll"
   step "subset_${s1}_$s2" $PY -c "
@@ -56,6 +57,7 @@ for name, path in (('student1', s1file), ('student2', src + '/student2.jsonl')):
                 out.write(l)
 print('re-roll', len(bad))" "$src" "$V2/grpo_train/s1_seed$s1/student1.jsonl" "$dst"
   n=$(wc -l < "$dst/reroll/student1.jsonl")
+  if [ "$n" -eq 0 ]; then step "merge_${s1}_$s2" cp "$src/rollouts.jsonl" "$dst/rollouts.jsonl"; continue; fi
   step "reroll_${s1}_$s2" flock "$LOCK" $PY scripts/run_rollouts_parallel.py --config "$TRAIN_CFG" \
     --student1 "$dst/reroll/student1.jsonl" --student2 "$dst/reroll/student2.jsonl" \
     --output "$dst/reroll/rollouts.jsonl" --limit "$n" --workers 16 --rollout-id "train_s1-${s1}_s2-$s2" --resume
