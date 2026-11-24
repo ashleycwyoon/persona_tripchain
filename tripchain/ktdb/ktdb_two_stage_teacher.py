@@ -1,4 +1,5 @@
 """KTDB two-stage teacher data loading, XML prompting, and validation."""
+
 from __future__ import annotations
 
 import html
@@ -8,7 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-from src.paths import PARENT_DATA_ROOT  # noqa: E402
+
+from tripchain.paths import TRIPCHAIN_1015_DATA as PARENT_DATA_ROOT
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 KTDB_PROCESSED = PARENT_DATA_ROOT / "processed" / "train"
@@ -88,8 +90,11 @@ def load_teacher_records(
             item = {
                 key: source_item[key]
                 for key in (
-                    "activity_index", "activity_type", "location",
-                    "start_time_min", "dwell_time_min",
+                    "activity_index",
+                    "activity_type",
+                    "location",
+                    "start_time_min",
+                    "dwell_time_min",
                 )
                 if key in source_item
             }
@@ -111,13 +116,10 @@ def load_teacher_records(
         for item in activities:
             location = item.get("location") or {}
             region_text = " ".join(
-                str(location.get(key) or "")
-                for key in ("administrative_dong_name", "gu", "sido", "sigungu")
+                str(location.get(key) or "") for key in ("administrative_dong_name", "gu", "sido", "sigungu")
             )
             if re.search(r"[가-힣\u3400-\u9fff]", region_text):
-                raise ValueError(
-                    f"non-English location name for person_id={person_id}: {region_text}"
-                )
+                raise ValueError(f"non-English location name for person_id={person_id}: {region_text}")
         spatial_sequence = [item["activity_type"] for item in activities]
         if sequence != spatial_sequence:
             raise ValueError(f"activity sequence mismatch for person_id={person_id}")

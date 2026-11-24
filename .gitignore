@@ -17,7 +17,7 @@ venv/
 # Data, model weights and experiment outputs live outside the repository
 # (see tripchain/paths.py); these patterns only guard against accidents.
 # Directory patterns are anchored to the repository root so that source
-# folders such as third_party/.../src/data stay tracked.
+# folders inside the code tree stay tracked.
 /data/
 /outputs/
 /runs/

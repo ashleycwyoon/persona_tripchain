@@ -4,6 +4,7 @@
 Numeric codes are retained only as internal join keys.  Model-facing labels and
 whitelists are deterministic English renderings of the workbook names.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -14,8 +15,9 @@ import zipfile
 from pathlib import Path
 from typing import Iterator
 import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from testing.paths import DATA_ROOT, SHARED_DATA_ROOT  # noqa: E402
+from tripchain.paths import SHARED_DATA_ROOT, TRIPCHAIN_1015_DATA as DATA_ROOT  # noqa: E402
 
 from korean_admin_english import romanize_name
 
@@ -54,15 +56,18 @@ def _xlsx_rows(path: Path) -> Iterator[dict[str, str]]:
                 row.clear()
 
 
-def load_admin_registry(path: Path = DEFAULT_WORKBOOK,
-                        as_of: str = AS_OF_DATE) -> dict[str, dict[str, str]]:
+def load_admin_registry(path: Path = DEFAULT_WORKBOOK, as_of: str = AS_OF_DATE) -> dict[str, dict[str, str]]:
     """Return active administrative-dong code -> Korean/English label metadata."""
     registry: dict[str, dict[str, str]] = {}
     for row_number, row in enumerate(_xlsx_rows(Path(path)), 1):
         if row_number == 1:
             expected = {
-                "A": "행정동코드", "B": "시도명", "C": "시군구명",
-                "D": "읍면동명", "G": "생성일자", "H": "말소일자",
+                "A": "행정동코드",
+                "B": "시도명",
+                "C": "시군구명",
+                "D": "읍면동명",
+                "G": "생성일자",
+                "H": "말소일자",
             }
             if any(row.get(key) != value for key, value in expected.items()):
                 raise ValueError(f"unexpected administrative workbook header: {row}")
@@ -107,13 +112,8 @@ def build_model_whitelist(registry: dict[str, dict[str, str]]) -> dict:
     return {
         "source": str(DEFAULT_WORKBOOK),
         "as_of": AS_OF_DATE,
-        "seoul": {
-            gu: sorted(dongs) for gu, dongs in sorted(seoul.items())
-        },
-        "external_sigungu": [
-            {"sido": sido, "sigungu": sigungu}
-            for sido, sigungu in sorted(external)
-        ],
+        "seoul": {gu: sorted(dongs) for gu, dongs in sorted(seoul.items())},
+        "external_sigungu": [{"sido": sido, "sigungu": sigungu} for sido, sigungu in sorted(external)],
     }
 
 
@@ -129,13 +129,18 @@ def main() -> None:
     whitelist["as_of"] = args.as_of
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(whitelist, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({
-        "active_admin_dongs": len(registry),
-        "seoul_gu": len(whitelist["seoul"]),
-        "seoul_admin_dongs": sum(map(len, whitelist["seoul"].values())),
-        "external_sigungu": len(whitelist["external_sigungu"]),
-        "output": str(args.out),
-    }, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "active_admin_dongs": len(registry),
+                "seoul_gu": len(whitelist["seoul"]),
+                "seoul_admin_dongs": sum(map(len, whitelist["seoul"].values())),
+                "external_sigungu": len(whitelist["external_sigungu"]),
+                "output": str(args.out),
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

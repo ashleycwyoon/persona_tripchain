@@ -4,6 +4,7 @@ The conversion follows Revised Romanization spelling rules closely enough for
 stable model inputs. Province-level names use their established English forms.
 The original administrative code remains the canonical location identifier.
 """
+
 from __future__ import annotations
 
 import re
@@ -32,9 +33,89 @@ SIDO_EN = {
 }
 
 _INITIAL = ("g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h")
-_VOWEL = ("a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i")
-_FINAL = ("", "k", "k", "k", "n", "n", "n", "t", "l", "k", "m", "p", "l", "l", "p", "l", "m", "p", "p", "t", "t", "ng", "t", "t", "k", "t", "p", "t")
-_FINAL_JAMO = ("", "g", "kk", "gs", "n", "nj", "nh", "d", "r", "rg", "rm", "rb", "rs", "rt", "rp", "rh", "m", "b", "bs", "s", "ss", "ng", "j", "ch", "k", "t", "p", "h")
+_VOWEL = (
+    "a",
+    "ae",
+    "ya",
+    "yae",
+    "eo",
+    "e",
+    "yeo",
+    "ye",
+    "o",
+    "wa",
+    "wae",
+    "oe",
+    "yo",
+    "u",
+    "wo",
+    "we",
+    "wi",
+    "yu",
+    "eu",
+    "ui",
+    "i",
+)
+_FINAL = (
+    "",
+    "k",
+    "k",
+    "k",
+    "n",
+    "n",
+    "n",
+    "t",
+    "l",
+    "k",
+    "m",
+    "p",
+    "l",
+    "l",
+    "p",
+    "l",
+    "m",
+    "p",
+    "p",
+    "t",
+    "t",
+    "ng",
+    "t",
+    "t",
+    "k",
+    "t",
+    "p",
+    "t",
+)
+_FINAL_JAMO = (
+    "",
+    "g",
+    "kk",
+    "gs",
+    "n",
+    "nj",
+    "nh",
+    "d",
+    "r",
+    "rg",
+    "rm",
+    "rb",
+    "rs",
+    "rt",
+    "rp",
+    "rh",
+    "m",
+    "b",
+    "bs",
+    "s",
+    "ss",
+    "ng",
+    "j",
+    "ch",
+    "k",
+    "t",
+    "p",
+    "h",
+)
 
 
 def _syllable_parts(character: str) -> tuple[int, int, int] | None:
@@ -58,7 +139,21 @@ def _romanize_hangul_word(word: str) -> str:
 
         # Liaison before a vowel-initial syllable: 역이 -> yeogi, not yeoki.
         if final and next_parts and next_parts[0] == 11 and final != 21:
-            movable = {1: "g", 4: "n", 7: "d", 8: "r", 16: "m", 17: "b", 19: "s", 22: "j", 23: "ch", 24: "k", 25: "t", 26: "p", 27: "h"}
+            movable = {
+                1: "g",
+                4: "n",
+                7: "d",
+                8: "r",
+                16: "m",
+                17: "b",
+                19: "s",
+                22: "j",
+                23: "ch",
+                24: "k",
+                25: "t",
+                26: "p",
+                27: "h",
+            }
             if final in movable:
                 coda = ""
                 # The next silent onset is handled on its own iteration; append
@@ -100,7 +195,17 @@ def romanize_name(value: str | None) -> str | None:
     # Administrative 제 before a number is a numbering marker, not part of the
     # proper name: 자양제4동 -> Jayang 4-dong.
     source = re.sub(r"제(?=\d)", "", source)
-    suffixes = {"동": "dong", "읍": "eup", "면": "myeon", "리": "ri", "가": "ga", "구": "gu", "군": "gun", "시": "si", "도": "do"}
+    suffixes = {
+        "동": "dong",
+        "읍": "eup",
+        "면": "myeon",
+        "리": "ri",
+        "가": "ga",
+        "구": "gu",
+        "군": "gun",
+        "시": "si",
+        "도": "do",
+    }
 
     pieces: list[str] = []
     for token in source.split():

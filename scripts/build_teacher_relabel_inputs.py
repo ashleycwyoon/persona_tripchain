@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Teacher inputs (v1 format) for the people whose v2 ground truth changed.
 
-The upstream KTDB Teacher (third_party/tripchain_1015/
-persona-rationale-multi-country-qwen35/scripts/09d_run_ktdb_teacher_2gpu.py)
+The KTDB Teacher (scripts/run_teacher_2gpu.py)
 reads three files joined on person_id: demographics (English, without
 residence), activity_sequence and location_dwell_mode_preference. Its
 mode_preference is the v1 stage-level ranking (upstream ranked_mode_preference),

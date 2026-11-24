@@ -40,8 +40,6 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
-# Vendored upstream code is kept byte-identical to its source.
-extend-exclude = ["third_party"]
 
 [tool.ruff.lint]
 # Pyflakes and the pycodestyle error classes, stated explicitly so the result

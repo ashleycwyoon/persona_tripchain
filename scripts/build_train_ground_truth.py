@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the v1 train-split ground truth reference.
 
-The upstream preprocessing (third_party/tripchain_1015/scripts/prepare_ktdb_training_data.py)
+The KTDB preprocessing (scripts/prepare_ktdb_training_data.py)
 writes a ground truth reference for the test split only. This joins its train activity
 sequences and spatial targets into the same format,
 {"person_id", "activity_sequence", **location_dwell_mode_preference}, ordered like the

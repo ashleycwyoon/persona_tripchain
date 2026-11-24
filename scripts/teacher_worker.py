@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run KTDB two-stage persona/reasoning teacher inference on a local GPU."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,7 +13,8 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.data.ktdb_two_stage_teacher import (  # noqa: E402
+from tripchain.paths import HF_HUB_CACHE  # noqa: E402
+from tripchain.ktdb.ktdb_two_stage_teacher import (  # noqa: E402
     DEFAULT_ACTIVITY,
     DEFAULT_DEMOGRAPHICS,
     DEFAULT_SPATIAL,
@@ -72,9 +74,14 @@ def ascii_allowed_token_ids(tokenizer) -> list[int]:
     return allowed
 
 
-def generate_batch(model, tokenizer, prompts: list[str], max_new_tokens: int,
-                   temperature: float,
-                   allowed_token_ids: list[int] | None = None) -> list[str]:
+def generate_batch(
+    model,
+    tokenizer,
+    prompts: list[str],
+    max_new_tokens: int,
+    temperature: float,
+    allowed_token_ids: list[int] | None = None,
+) -> list[str]:
     from vllm import SamplingParams
 
     rendered = [
@@ -95,11 +102,14 @@ def generate_batch(model, tokenizer, prompts: list[str], max_new_tokens: int,
     return [output.outputs[0].text for output in outputs]
 
 
-def generate_batch_safe(tokenizer, model, prompts, max_new_tokens, temperature,
-                        allowed_token_ids=None):
+def generate_batch_safe(tokenizer, model, prompts, max_new_tokens, temperature, allowed_token_ids=None):
     try:
         return generate_batch(
-            model, tokenizer, prompts, max_new_tokens, temperature,
+            model,
+            tokenizer,
+            prompts,
+            max_new_tokens,
+            temperature,
             allowed_token_ids=allowed_token_ids,
         )
     except RuntimeError as exc:
@@ -107,10 +117,18 @@ def generate_batch_safe(tokenizer, model, prompts, max_new_tokens, temperature,
             raise
         middle = len(prompts) // 2
         return generate_batch_safe(
-            tokenizer, model, prompts[:middle], max_new_tokens, temperature,
+            tokenizer,
+            model,
+            prompts[:middle],
+            max_new_tokens,
+            temperature,
             allowed_token_ids,
         ) + generate_batch_safe(
-            tokenizer, model, prompts[middle:], max_new_tokens, temperature,
+            tokenizer,
+            model,
+            prompts[middle:],
+            max_new_tokens,
+            temperature,
             allowed_token_ids,
         )
 
@@ -134,7 +152,7 @@ def correction_prompt(original_prompt: str, violation: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="Qwen/Qwen2.5-32B-Instruct-AWQ")
-    parser.add_argument("--download-dir", type=Path, default=Path("/data-fast/chaewon/huggingface"))
+    parser.add_argument("--download-dir", type=Path, default=HF_HUB_CACHE)
     parser.add_argument("--demographics", type=Path, default=DEFAULT_DEMOGRAPHICS)
     parser.add_argument("--activity", type=Path, default=DEFAULT_ACTIVITY)
     parser.add_argument("--spatial", type=Path, default=DEFAULT_SPATIAL)
@@ -214,9 +232,7 @@ def main() -> None:
             batch = records[start : start + args.batch_size]
             prompts = [build_user_prompt(record) for record in batch]
             try:
-                raw_outputs = generate_batch_safe(
-                    tokenizer, model, prompts, args.max_new_tokens, args.temperature
-                )
+                raw_outputs = generate_batch_safe(tokenizer, model, prompts, args.max_new_tokens, args.temperature)
             except Exception as exc:
                 raw_outputs = [""] * len(batch)
                 batch_error = f"generation_error: {type(exc).__name__}: {exc}"
@@ -278,11 +294,11 @@ def main() -> None:
                         "raw_output": raw[:4000],
                     }
                     errors += 1
-                    error_handle.write(
-                        json.dumps(output, ensure_ascii=False, separators=(",", ":")) + "\n"
-                    )
+                    error_handle.write(json.dumps(output, ensure_ascii=False, separators=(",", ":")) + "\n")
                     error_handle.flush()
-            print(f"  [{min(start + len(batch), len(records))}/{len(records)}] ok={written} errors={errors}", flush=True)
+            print(
+                f"  [{min(start + len(batch), len(records))}/{len(records)}] ok={written} errors={errors}", flush=True
+            )
 
     # On resume, old failures may now be successful. Keep only the latest error
     # for IDs that remain unresolved so the error file reflects final state.
@@ -306,8 +322,7 @@ def main() -> None:
 
     final_errors = len(unresolved_errors)
     print(
-        f"[done] new_ok={written} unresolved={final_errors} "
-        f"output={args.out} error_output={error_path}",
+        f"[done] new_ok={written} unresolved={final_errors} output={args.out} error_output={error_path}",
         flush=True,
     )
     completion = {
@@ -321,9 +336,7 @@ def main() -> None:
         "error_output": str(error_path),
     }
     completion_tmp = completion_path.with_name(completion_path.name + ".tmp")
-    completion_tmp.write_text(
-        json.dumps(completion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    completion_tmp.write_text(json.dumps(completion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     completion_tmp.replace(completion_path)
 
 

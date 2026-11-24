@@ -3,8 +3,8 @@
 
 The residence (sido, sigungu, administrative dong) comes from the KTDB
 personal-characteristics survey fields SQ1_5..SQ1_8, not from an inferred home
-activity. Reads the v1 train/test demographics written by the upstream
-preprocessing (third_party/tripchain_1015/scripts/prepare_ktdb_training_data.py)
+activity. Reads the v1 train/test demographics written by the KTDB
+preprocessing (scripts/prepare_ktdb_training_data.py)
 and writes <output-root>/{train,test}/demographics_with_residence.jsonl.
 """
 
@@ -20,7 +20,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tripchain.paths import DATA_ROOT, SHARED_DATA_ROOT, TRIPCHAIN_1015_CODE, TRIPCHAIN_1015_DATA  # noqa: E402
+from tripchain.paths import DATA_ROOT, SHARED_DATA_ROOT, TRIPCHAIN_1015_DATA  # noqa: E402
 from tripchain.residence import augment_demographics, validate_residence_demographics  # noqa: E402
 
 SOURCE = TRIPCHAIN_1015_DATA
@@ -28,8 +28,8 @@ RAW_PEOPLE = SHARED_DATA_ROOT / "KTDB_2021/①개인특성.csv"
 # Shared administrative-code workbook (also ktdb_admin_registry.DEFAULT_WORKBOOK).
 ADMIN_WORKBOOK = SHARED_DATA_ROOT / "행정동코드_20210726(말소코드포함).xlsx"
 
-# KTDB helpers of the upstream preprocessing.
-sys.path.insert(0, str(TRIPCHAIN_1015_CODE / "scripts"))
+# KTDB helpers of the preprocessing (scripts/, also importable when this file is imported).
+sys.path.insert(0, str(ROOT / "scripts"))
 from ktdb_admin_registry import load_admin_registry  # noqa: E402
 from prepare_ktdb_training_data import clean, home_dong  # noqa: E402
 

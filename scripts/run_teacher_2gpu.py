@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Launch one or more KTDB teacher workers and show aggregate progress with ETA."""
+
 from __future__ import annotations
 
 import argparse
@@ -15,13 +16,13 @@ from tqdm import tqdm
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.data.ktdb_two_stage_teacher import (  # noqa: E402
+from tripchain.ktdb.ktdb_two_stage_teacher import (  # noqa: E402
     DEFAULT_ACTIVITY,
     DEFAULT_DEMOGRAPHICS,
     DEFAULT_SPATIAL,
     load_teacher_records,
 )
-from src.paths import OUTPUT_ROOT  # noqa: E402
+from tripchain.paths import HF_HUB_CACHE, TEACHER_OUTPUT_ROOT as OUTPUT_ROOT  # noqa: E402
 
 
 def line_count(path: Path) -> int:
@@ -35,16 +36,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
-        "--gpus", default="0",
+        "--gpus",
+        default="0",
         help="comma-separated data-parallel GPU IDs; use 0 for one-GPU teacher inference",
     )
     parser.add_argument("--model", default="Qwen/Qwen2.5-32B-Instruct-AWQ")
-    parser.add_argument("--download-dir", type=Path, default=Path("/data-fast/chaewon/huggingface"))
+    parser.add_argument("--download-dir", type=Path, default=HF_HUB_CACHE)
     parser.add_argument("--demographics", type=Path, default=DEFAULT_DEMOGRAPHICS)
     parser.add_argument("--activity", type=Path, default=DEFAULT_ACTIVITY)
     parser.add_argument("--spatial", type=Path, default=DEFAULT_SPATIAL)
     parser.add_argument(
-        "--output-prefix", type=Path,
+        "--output-prefix",
+        type=Path,
         default=OUTPUT_ROOT / "reports" / "ktdb_teacher_qwen32b_english_demographics",
     )
     parser.add_argument("--batch-size", type=int, default=32)
@@ -77,8 +80,9 @@ def main() -> None:
     processes: list[subprocess.Popen[str]] = []
     log_handles = []
     env = os.environ.copy()
-    available_cpus = (len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity")
-                      else (os.cpu_count() or shard_count))
+    available_cpus = (
+        len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or shard_count)
+    )
     threads = max(1, available_cpus // shard_count)
     env.update(
         {
@@ -93,20 +97,33 @@ def main() -> None:
         for shard, gpu in enumerate(gpus):
             command = [
                 args.python,
-                str(ROOT / "scripts" / "09c_abduce_ktdb_two_stage.py"),
-                "--model", args.model,
-                "--download-dir", str(args.download_dir),
-                "--demographics", str(args.demographics),
-                "--activity", str(args.activity),
-                "--spatial", str(args.spatial),
-                "--out", str(outputs[shard]),
-                "--shard", f"{shard}/{shard_count}",
-                "--gpu", gpu,
-                "--batch-size", str(args.batch_size),
-                "--gpu-memory-utilization", str(args.gpu_memory_utilization),
-                "--max-new-tokens", str(args.max_new_tokens),
-                "--max-retries", str(args.max_retries),
-                "--retry-temperature", str(args.retry_temperature),
+                str(ROOT / "scripts" / "teacher_worker.py"),
+                "--model",
+                args.model,
+                "--download-dir",
+                str(args.download_dir),
+                "--demographics",
+                str(args.demographics),
+                "--activity",
+                str(args.activity),
+                "--spatial",
+                str(args.spatial),
+                "--out",
+                str(outputs[shard]),
+                "--shard",
+                f"{shard}/{shard_count}",
+                "--gpu",
+                gpu,
+                "--batch-size",
+                str(args.batch_size),
+                "--gpu-memory-utilization",
+                str(args.gpu_memory_utilization),
+                "--max-new-tokens",
+                str(args.max_new_tokens),
+                "--max-retries",
+                str(args.max_retries),
+                "--retry-temperature",
+                str(args.retry_temperature),
             ]
             if args.resume:
                 command.append("--resume")
@@ -136,32 +153,25 @@ def main() -> None:
             previous = initial
             while any(process.poll() is None for process in processes):
                 new_errors = sum(
-                    max(0, line_count(path) - starting)
-                    for path, starting in zip(errors, initial_error_counts)
+                    max(0, line_count(path) - starting) for path, starting in zip(errors, initial_error_counts)
                 )
                 current = min(total, sum(line_count(path) for path in outputs) + new_errors)
                 if current > previous:
                     progress.update(current - previous)
                     previous = current
-                    progress.set_postfix_str(
-                        f"ok={sum(line_count(p) for p in outputs)} retry_errors={new_errors}"
-                    )
+                    progress.set_postfix_str(f"ok={sum(line_count(p) for p in outputs)} retry_errors={new_errors}")
                 time.sleep(2)
             new_errors = sum(
-                max(0, line_count(path) - starting)
-                for path, starting in zip(errors, initial_error_counts)
+                max(0, line_count(path) - starting) for path, starting in zip(errors, initial_error_counts)
             )
             current = min(total, sum(line_count(path) for path in outputs) + new_errors)
             if current > previous:
                 progress.update(current - previous)
-            progress.set_postfix_str(
-                f"ok={sum(line_count(p) for p in outputs)} retry_errors={new_errors}"
-            )
+            progress.set_postfix_str(f"ok={sum(line_count(p) for p in outputs)} retry_errors={new_errors}")
 
         return_codes = [process.wait() for process in processes]
         if any(code != 0 for code in return_codes):
-            failed = [f"GPU{gpu}: exit={code}, log={log}"
-                      for gpu, code, log in zip(gpus, return_codes, logs) if code]
+            failed = [f"GPU{gpu}: exit={code}, log={log}" for gpu, code, log in zip(gpus, return_codes, logs) if code]
             raise SystemExit("Teacher shard failed:\n" + "\n".join(failed))
         print("Teacher inference complete.")
         for path in outputs:

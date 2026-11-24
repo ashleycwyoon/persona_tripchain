@@ -4,6 +4,7 @@
 The split is made at person level before any training target is written.  All
 output JSONL files are UTF-8 and contain one person per line.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,8 +16,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from testing.paths import DATA_ROOT, SHARED_DATA_ROOT  # noqa: E402
+from tripchain.paths import SHARED_DATA_ROOT, TRIPCHAIN_1015_DATA as DATA_ROOT  # noqa: E402
 
 from korean_admin_english import english_location
 from ktdb_admin_registry import (
@@ -83,8 +85,15 @@ PURPOSE = {
 
 PLACE = {"1": "home", "2": "work", "3": "school"}
 ACTIVITY_TYPES = {
-    "home", "work", "school", "leisure", "shopping", "medical",
-    "escort_care", "eat_out", "other",
+    "home",
+    "work",
+    "school",
+    "leisure",
+    "shopping",
+    "medical",
+    "escort_care",
+    "eat_out",
+    "other",
 }
 
 
@@ -201,8 +210,7 @@ def classify_activity(purpose: object, purpose_text: object, place: object) -> s
     return "other"
 
 
-def _canonical_location(code: object, fallback: dict,
-                        registry: dict[str, dict[str, str]]) -> dict:
+def _canonical_location(code: object, fallback: dict, registry: dict[str, dict[str, str]]) -> dict:
     code = normalize_code(code) or None
     canonical = registry.get(code or "")
     if canonical is None and code:
@@ -224,9 +232,7 @@ def _canonical_location(code: object, fallback: dict,
                 "dong_ko": fallback.get("administrative_dong_name"),
                 "sido": sido,
                 "sigungu": sigungu,
-                "administrative_dong_name": english_location(fallback).get(
-                    "administrative_dong_name"
-                ),
+                "administrative_dong_name": english_location(fallback).get("administrative_dong_name"),
             }
     if canonical:
         return {
@@ -240,21 +246,28 @@ def _canonical_location(code: object, fallback: dict,
     return english_location({"administrative_dong_code": code, **fallback})
 
 
-def admin_dong(row: pd.Series, prefix: str,
-               registry: dict[str, dict[str, str]]) -> dict:
-    return _canonical_location(row.get(f"{prefix}_1_5"), {
-        "administrative_dong_name": clean(row.get(f"{prefix}_1_8")) or None,
-        "gu": clean(row.get(f"{prefix}_1_7")) or None,
-        "sido": clean(row.get(f"{prefix}_1_6")) or None,
-    }, registry)
+def admin_dong(row: pd.Series, prefix: str, registry: dict[str, dict[str, str]]) -> dict:
+    return _canonical_location(
+        row.get(f"{prefix}_1_5"),
+        {
+            "administrative_dong_name": clean(row.get(f"{prefix}_1_8")) or None,
+            "gu": clean(row.get(f"{prefix}_1_7")) or None,
+            "sido": clean(row.get(f"{prefix}_1_6")) or None,
+        },
+        registry,
+    )
 
 
 def home_dong(person: pd.Series, registry: dict[str, dict[str, str]]) -> dict:
-    return _canonical_location(person.get("SQ1_5"), {
-        "administrative_dong_name": clean(person.get("SQ1_8")) or None,
-        "gu": clean(person.get("SQ1_7")) or None,
-        "sido": clean(person.get("SQ1_6")) or None,
-    }, registry)
+    return _canonical_location(
+        person.get("SQ1_5"),
+        {
+            "administrative_dong_name": clean(person.get("SQ1_8")) or None,
+            "gu": clean(person.get("SQ1_7")) or None,
+            "sido": clean(person.get("SQ1_6")) or None,
+        },
+        registry,
+    )
 
 
 def trip_modes(row: pd.Series) -> list[str]:
@@ -268,9 +281,7 @@ def trip_modes(row: pd.Series) -> list[str]:
                 # Fail loudly instead of collapsing driver and passenger into a
                 # misleading generic `car` label.
                 if role not in CAR_ROLE:
-                    raise ValueError(
-                        f"car/van stage TP5_{i}=2 has invalid TP5_{i}_2_1={role!r}"
-                    )
+                    raise ValueError(f"car/van stage TP5_{i}=2 has invalid TP5_{i}_2_1={role!r}")
                 result.append(CAR_ROLE[role])
             else:
                 result.append(MODE.get(code, "other"))
@@ -290,8 +301,9 @@ def ranked_mode_preference(rows: list[pd.Series]) -> list[dict]:
     return [{"rank": i + 1, "mode": mode, "count": counts[mode]} for i, mode in enumerate(ordered)]
 
 
-def build_targets(person: pd.Series, trip_group: pd.DataFrame | None,
-                  registry: dict[str, dict[str, str]]) -> tuple[dict, dict, dict]:
+def build_targets(
+    person: pd.Series, trip_group: pd.DataFrame | None, registry: dict[str, dict[str, str]]
+) -> tuple[dict, dict, dict]:
     pid = clean(person["idx"])
     rows: list[pd.Series] = []
     if trip_group is not None:
@@ -321,19 +333,20 @@ def build_targets(person: pd.Series, trip_group: pd.DataFrame | None,
     if origin_type == "home":
         origin_location = home_dong(person, registry)
 
-    episodes = [{
-        "activity_index": 0,
-        "activity_type": origin_type,
-        "location": origin_location,
-        "start_time_min": 0,
-        "dwell_time_min": first_departure,
-    }]
+    episodes = [
+        {
+            "activity_index": 0,
+            "activity_type": origin_type,
+            "location": origin_location,
+            "start_time_min": 0,
+            "dwell_time_min": first_departure,
+        }
+    ]
     timeline_valid = first_departure is not None and first_departure >= 0
 
     for i, row in enumerate(rows):
         activity_type = classify_activity(row.get("TP2"), row.get("TP2_a"), row.get("TP1"))
-        location = (home_dong(person, registry) if activity_type == "home"
-                    else admin_dong(row, "TP1", registry))
+        location = home_dong(person, registry) if activity_type == "home" else admin_dong(row, "TP1", registry)
         arrival = clock_minute(row.get("TP4_1"), row.get("TP4_2"))
         if i + 1 < len(rows):
             next_departure = clock_minute(rows[i + 1].get("TP3_1"), rows[i + 1].get("TP3_2"))
@@ -342,13 +355,15 @@ def build_targets(person: pd.Series, trip_group: pd.DataFrame | None,
             dwell = None if arrival is None else 1440 - arrival
         if arrival is None or dwell is None or dwell < 0:
             timeline_valid = False
-        episodes.append({
-            "activity_index": i + 1,
-            "activity_type": activity_type,
-            "location": location,
-            "start_time_min": arrival,
-            "dwell_time_min": dwell,
-        })
+        episodes.append(
+            {
+                "activity_index": i + 1,
+                "activity_type": activity_type,
+                "location": location,
+                "start_time_min": arrival,
+                "dwell_time_min": dwell,
+            }
+        )
 
     sequence_values = [episode["activity_type"] for episode in episodes]
     assert set(sequence_values) <= ACTIVITY_TYPES
@@ -391,9 +406,25 @@ def main() -> None:
     people = people.sort_values("idx").reset_index(drop=True)
 
     trip_columns = [
-        "idx", "fid", "th_seq", "sTP1", "sTP1_1_5", "sTP1_1_6", "sTP1_1_7", "sTP1_1_8",
-        "TP1", "TP1_1_5", "TP1_1_6", "TP1_1_7", "TP1_1_8", "TP2", "TP2_a",
-        "TP3_1", "TP3_2", "TP4_1", "TP4_2",
+        "idx",
+        "fid",
+        "th_seq",
+        "sTP1",
+        "sTP1_1_5",
+        "sTP1_1_6",
+        "sTP1_1_7",
+        "sTP1_1_8",
+        "TP1",
+        "TP1_1_5",
+        "TP1_1_6",
+        "TP1_1_7",
+        "TP1_1_8",
+        "TP2",
+        "TP2_a",
+        "TP3_1",
+        "TP3_2",
+        "TP4_1",
+        "TP4_2",
         *[f"TP5_{i}" for i in range(1, 11)],
         *[f"TP5_{i}_2_1" for i in range(1, 11)],
     ]
@@ -467,10 +498,12 @@ def main() -> None:
     )
 
     manifest_people = people[people["idx"].isin(processed_people_ids)]
-    manifest = pd.DataFrame({
-        "person_id": manifest_people["idx"],
-        "split": manifest_people["idx"].map(split),
-    })
+    manifest = pd.DataFrame(
+        {
+            "person_id": manifest_people["idx"],
+            "split": manifest_people["idx"].map(split),
+        }
+    )
     manifest.to_csv(out / "split_manifest.csv", index=False, encoding="utf-8")
 
     invalid_train = 0
@@ -482,8 +515,7 @@ def main() -> None:
         for key in ("gender", "age", "occupation")
     }
     missing["can_drive"] = sum(
-        demographic_records[pid]["demographics"]["can_drive"] == "unknown"
-        for pid in processed_people_ids
+        demographic_records[pid]["demographics"]["can_drive"] == "unknown" for pid in processed_people_ids
     )
     summary = {
         "seed": args.seed,

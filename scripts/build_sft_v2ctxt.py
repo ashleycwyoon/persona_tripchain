@@ -8,7 +8,7 @@ scripts/teacher_ctx.py (all v2 train + validation people):
 
   inputs   processed_v2/sft_build (the v1-format Teacher inputs build_sft_v2.py wrote)
   labels   <teacher-prefix>_shard{0,1}.jsonl
-  examples upstream build_student1_examples / build_student2_examples, then the
+  examples tripchain/ktdb build_student1_examples / build_student2_examples, then the
            build_sft_v2.py conversion (residence, key order, per-trip modes) and the
            build_context_v2.py context merge.
 
@@ -29,14 +29,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from tripchain.common import OUTPUT_ORDERS, ordered_output  # noqa: E402
-from tripchain.paths import DATA_ROOT, OUTPUT_ROOT, TRIPCHAIN_1015_CODE  # noqa: E402
+from tripchain.paths import DATA_ROOT, OUTPUT_ROOT  # noqa: E402
 from tripchain.residence import augment_demographics, validate_residence_demographics  # noqa: E402
 import prepare_residence_data as residence  # noqa: E402
 
-sys.path.insert(0, str(TRIPCHAIN_1015_CODE / "persona-rationale-multi-country-qwen35"))
-from src.data.ktdb_student1 import build_student1_examples  # noqa: E402
-from src.data.ktdb_student2 import build_student2_examples  # noqa: E402
-from src.data.ktdb_student_common import require_completed_teacher_shards  # noqa: E402
+from tripchain.ktdb.ktdb_student1 import build_student1_examples  # noqa: E402
+from tripchain.ktdb.ktdb_student2 import build_student2_examples  # noqa: E402
+from tripchain.ktdb.ktdb_student_common import require_completed_teacher_shards  # noqa: E402
 
 from build_sft_v2 import read_rows, write_rows  # noqa: E402
 

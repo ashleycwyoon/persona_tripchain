@@ -1,10 +1,11 @@
 """Build KTDB Student 2 SFT examples from teacher personas and spatial targets."""
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Iterable
 
-from src.data.ktdb_student_common import (
+from tripchain.ktdb.ktdb_student_common import (
     DEFAULT_TEACHER_SHARDS,
     compact_json,
     deterministic_split,
@@ -14,7 +15,7 @@ from src.data.ktdb_student_common import (
     require_completed_teacher_shards,
     require_identical_ids,
 )
-from src.paths import PARENT_DATA_ROOT  # noqa: E402
+from tripchain.paths import TRIPCHAIN_1015_DATA as PARENT_DATA_ROOT
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_LOCATION_WHITELIST = PARENT_DATA_ROOT / "processed" / "ktdb_location_whitelist.json"
@@ -37,22 +38,15 @@ def load_location_whitelist(path: Path = DEFAULT_LOCATION_WHITELIST) -> dict[str
     return {"seoul": value["seoul"], "external_sigungu": value["external_sigungu"]}
 
 
-def _validate_model_location(person_id: str, location: dict[str, Any],
-                             whitelist: dict[str, Any]) -> None:
+def _validate_model_location(person_id: str, location: dict[str, Any], whitelist: dict[str, Any]) -> None:
     if location["scope"] == "seoul":
         allowed = whitelist["seoul"].get(location["gu"], [])
         if location["administrative_dong_name"] not in allowed:
-            raise ValueError(
-                f"person_id={person_id}: Seoul location absent from codebook whitelist: {location}"
-            )
+            raise ValueError(f"person_id={person_id}: Seoul location absent from codebook whitelist: {location}")
         return
-    allowed_external = {
-        (item["sido"], item["sigungu"]) for item in whitelist["external_sigungu"]
-    }
+    allowed_external = {(item["sido"], item["sigungu"]) for item in whitelist["external_sigungu"]}
     if (location["sido"], location["sigungu"]) not in allowed_external:
-        raise ValueError(
-            f"person_id={person_id}: external location absent from codebook whitelist: {location}"
-        )
+        raise ValueError(f"person_id={person_id}: external location absent from codebook whitelist: {location}")
 
 
 def _location_dwell_targets(
@@ -72,13 +66,9 @@ def _location_dwell_targets(
         dwell_time = activity.get("dwell_time_min")
         if not isinstance(location, dict):
             raise ValueError(f"person_id={person_id}: missing administrative-dong location")
-        name, gu, sido = (
-            location.get("administrative_dong_name"), location.get("gu"), location.get("sido")
-        )
+        name, gu, sido = (location.get("administrative_dong_name"), location.get("gu"), location.get("sido"))
         if not name or not gu or not sido:
-            name, gu, sido = labels_by_code.get(
-                str(location.get("administrative_dong_code") or ""), (name, gu, sido)
-            )
+            name, gu, sido = labels_by_code.get(str(location.get("administrative_dong_code") or ""), (name, gu, sido))
         if not gu or not sido or (sido == "Seoul" and not name):
             raise ValueError(f"person_id={person_id}: incomplete natural-language location")
         if not isinstance(dwell_time, int) or dwell_time < 0:

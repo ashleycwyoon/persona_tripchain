@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Student1 / Student2 SFT data on the v2 ground truth and split.
 
-Steps (the Teacher and the example builders are the upstream ones, vendored
-under third_party/tripchain_1015/persona-rationale-multi-country-qwen35):
+Steps (the example builders are in tripchain/ktdb, the Teacher is
+scripts/run_teacher_2gpu.py):
 1. Teacher-format inputs for v2 train + validation people: v1 files for people
    whose ground truth did not change, scripts/build_teacher_relabel_inputs.py
    output for the rest.
@@ -32,15 +32,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from tripchain.common import OUTPUT_ORDERS, ordered_output  # noqa: E402
-from tripchain.paths import DATA_ROOT, OUTPUT_ROOT, TRIPCHAIN_1015_CODE, TRIPCHAIN_1015_DATA  # noqa: E402
+from tripchain.paths import DATA_ROOT, OUTPUT_ROOT, TRIPCHAIN_1015_DATA  # noqa: E402
 from tripchain.residence import augment_demographics, validate_residence_demographics  # noqa: E402
 import prepare_residence_data as residence  # noqa: E402
 
-TEACHER_REPO = TRIPCHAIN_1015_CODE / "persona-rationale-multi-country-qwen35"
-sys.path.insert(0, str(TEACHER_REPO))
-from src.data.ktdb_student1 import build_student1_examples  # noqa: E402
-from src.data.ktdb_student2 import build_student2_examples  # noqa: E402
-from src.data.ktdb_student_common import (  # noqa: E402
+from tripchain.ktdb.ktdb_student1 import build_student1_examples  # noqa: E402
+from tripchain.ktdb.ktdb_student2 import build_student2_examples  # noqa: E402
+from tripchain.ktdb.ktdb_student_common import (  # noqa: E402
     DEFAULT_TEACHER_SHARDS,
     require_completed_teacher_shards,
 )

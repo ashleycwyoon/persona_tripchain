@@ -3,7 +3,7 @@
 # work-status context), but the SFT targets come from a Teacher that also saw the context
 # (scripts/teacher_ctx.py). The v2ctx targets were written without it and contradicted it
 # (55% of the people in multi-member households were described as living alone).
-# 0. Teacher (both GPUs, several hours): the upstream 09d script through scripts/teacher_ctx_python
+# 0. Teacher (both GPUs, several hours): scripts/run_teacher_2gpu.py through scripts/teacher_ctx_python
 #    on all v2 train + validation people; scripts/build_sft_v2ctxt.py -> processed_v2ctxt/sft
 #    (user messages identical to processed_v2ctx/sft apart from the Teacher text, checked).
 # 1-4. As run_v2ctx.sh with the v2ctxt configs. Stops before GRPO unless RUN_GRPO=1.
@@ -54,10 +54,9 @@ roll() { flock "$LOCK" $PY scripts/run_rollouts_parallel.py --config "$1" --stud
 echo "v2ctxt -> $OUT ($(date))"
 
 # 0. Teacher with context, then SFT data.
-TEACHER_REPO="${TRIPCHAIN_1015_CODE:-$PWD/third_party/tripchain_1015}/persona-rationale-multi-country-qwen35"
 TIN=$DATA/processed_v2ctx/teacher_input
 TPREFIX=$RUNS/teacher_ctx/teacher_ctx; mkdir -p "$(dirname "$TPREFIX")"
-teacher() { $PY "$TEACHER_REPO/scripts/09d_run_ktdb_teacher_2gpu.py" --python "$PWD/scripts/teacher_ctx_python" --gpus 0,1 \
+teacher() { $PY scripts/run_teacher_2gpu.py --python "$PWD/scripts/teacher_ctx_python" --gpus 0,1 \
               --model Qwen/Qwen2.5-32B-Instruct-AWQ ${HF_HUB_CACHE:+--download-dir "$HF_HUB_CACHE"} --batch-size 32 \
               --gpu-memory-utilization 0.95 --max-new-tokens 900 --max-retries 10 --retry-temperature 0.2 \
               --demographics "$TIN/demographics.jsonl" --activity "$TIN/activity_sequence.jsonl" \

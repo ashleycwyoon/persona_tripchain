@@ -1,4 +1,5 @@
 """Shared schema and provenance checks for the two KTDB student datasets."""
+
 from __future__ import annotations
 
 import hashlib
@@ -6,13 +7,12 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from src.data.ktdb_two_stage_teacher import (
+from tripchain.ktdb.ktdb_two_stage_teacher import (
     PROMPT_SCHEMA_VERSION,
     PROMPT_SOURCE,
-    REPO_ROOT,
     TeacherInference,
 )
-from src.paths import OUTPUT_ROOT  # noqa: E402
+from tripchain.paths import TEACHER_OUTPUT_ROOT as OUTPUT_ROOT
 
 PERSONA_BUNDLE_KEYS = {
     "professional_persona",
@@ -55,8 +55,7 @@ def load_teacher_rows(paths: Iterable[Path]) -> dict[str, dict[str, Any]]:
                 raise ValueError(f"duplicate teacher person_id={person_id} across shards")
             if set(row) != TEACHER_OUTPUT_KEYS:
                 raise ValueError(
-                    f"teacher person_id={person_id}: expected fields {sorted(TEACHER_OUTPUT_KEYS)}, "
-                    f"got {sorted(row)}"
+                    f"teacher person_id={person_id}: expected fields {sorted(TEACHER_OUTPUT_KEYS)}, got {sorted(row)}"
                 )
             TeacherInference(**{key: value for key, value in row.items() if key != "person_id"})
             combined[person_id] = row
@@ -93,19 +92,19 @@ def require_completed_teacher_shards(paths: Iterable[Path]) -> None:
         with path.open("rb") as handle:
             actual = sum(1 for line in handle if line.strip())
         if actual != successful:
-            raise RuntimeError(
-                f"teacher shard line count mismatch: {path} "
-                f"(lines={actual}, manifest={successful})"
-            )
+            raise RuntimeError(f"teacher shard line count mismatch: {path} (lines={actual}, manifest={successful})")
 
 
 def persona_bundle(row: dict[str, Any]) -> dict[str, Any]:
-    return {key: row[key] for key in (
-        "professional_persona",
-        "family_persona",
-        "persona",
-        "hobbies_and_interests_list",
-    )}
+    return {
+        key: row[key]
+        for key in (
+            "professional_persona",
+            "family_persona",
+            "persona",
+            "hobbies_and_interests_list",
+        )
+    }
 
 
 def compact_json(value: Any) -> str:
@@ -121,9 +120,7 @@ def deterministic_split(
         raise ValueError("at least two examples are required for a train/validation split")
     ordered = sorted(
         rows,
-        key=lambda row: hashlib.sha256(
-            f"{seed}:{row['person_id']}".encode("utf-8")
-        ).digest(),
+        key=lambda row: hashlib.sha256(f"{seed}:{row['person_id']}".encode("utf-8")).digest(),
     )
     validation_size = max(1, min(len(rows) - 1, round(len(rows) * validation_fraction)))
     validation_ids = {row["person_id"] for row in ordered[:validation_size]}
@@ -141,8 +138,5 @@ def require_identical_ids(named_rows: dict[str, dict[str, dict[str, Any]]]) -> l
         if current != reference:
             missing = sorted(reference - current)[:5]
             extra = sorted(current - reference)[:5]
-            raise ValueError(
-                f"person_id mismatch: {name} vs {reference_name}; "
-                f"missing={missing}, extra={extra}"
-            )
+            raise ValueError(f"person_id mismatch: {name} vs {reference_name}; missing={missing}, extra={extra}")
     return sorted(reference, key=lambda value: (len(value), value))

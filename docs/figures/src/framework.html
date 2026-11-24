@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+.cols { display: grid; grid-template-columns: 404px minmax(0, 1fr) 290px; column-gap: 30px; gap: 34px; margin-top: 16px; align-items: stretch; }
+.panel { border: 1.5px solid; border-radius: 14px; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel.p1 { background: var(--p1); border-color: var(--p1b); }
+.panel.p2 { background: var(--p2); border-color: var(--p2b); }
+.panel.p3 { background: var(--p3); border-color: var(--p3b); }
+.ph { text-align: center; }
+.ph h2 { font-size: 19px; font-weight: 800; }
+.ph p { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.p1 .ph h2 { color: var(--p1t); } .p2 .ph h2 { color: var(--p2t); } .p3 .ph h2 { color: var(--p3t); }
+.card { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+.ct { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; }
+.ct small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.datacard { display: grid; gap: 8px; text-align: center; }
+.datacard .blk { display: grid; justify-items: center; gap: 2px; }
+.datacard .blk b { font-size: 13px; }
+.datacard .blk span { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.teacher .sub { margin-top: 8px; background: var(--pink); border: 1px solid var(--pinkb); border-radius: 8px; padding: 6px 8px; text-align: center; color: var(--pinkt); font-weight: 700; font-size: 12.5px; }
+.teacher ul { margin-top: 8px; }
+.sft { display: flex; justify-content: center; }
+.sft div { font-size: 12px; font-weight: 600; color: var(--p1t); text-align: center; line-height: 1.35; }
+.student { border-width: 1.5px; }
+.student.s1c { border-color: #9DB9EC; background: #F4F8FE; }
+.student.s2c { border-color: #9ED3AE; background: #F3FAF5; }
+.student .ct { flex-direction: column; text-align: center; gap: 2px; }
+.student ul { margin-top: 8px; }
+.twnote { font-size: 11.5px; color: var(--muted); text-align: center; background: rgba(255,255,255,0.6); border: 1px dashed var(--p1b); border-radius: 8px; padding: 7px 8px; line-height: 1.45; }
+
+.p2low { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 30px; align-items: start; }
+.rollout { background: #F8FBFF; border: 1.5px solid var(--p2b); border-radius: 12px; padding: 11px 12px 12px; display: grid; gap: 12px; align-content: start; }
+.rt { text-align: center; font-weight: 800; font-size: 15px; color: var(--p2t); }
+.rt span { font-weight: 500; font-size: 12px; color: var(--muted); }
+.steps { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1.45fr) minmax(0, 0.9fr); gap: 22px; }
+.step.envstep { background: var(--env); border: 1.5px solid var(--envb); }
+.step.envstep .hd { color: var(--p3t); }
+.envstep .gh { display: flex; gap: 6px; align-items: center; background: var(--white); border-radius: 7px; padding: 5px 7px; font-size: 12px; font-weight: 700; color: #1C6B3A; line-height: 1.3; }
+.envstep .gh small { display: block; font-weight: 500; color: var(--muted); font-size: 10.8px; }
+.envstep .gh .ic { width: 18px; height: 18px; }
+.step.out { border: 1.5px solid #8C99AB; }
+.step { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 11px; display: grid; gap: 6px; align-content: start; }
+.step .hd { text-align: center; font-weight: 700; font-size: 13.5px; line-height: 1.3; }
+.step .hd small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+.step .icons { display: flex; justify-content: center; gap: 6px; color: var(--p2t); }
+.num { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: var(--p2t); color: #FFFFFF; font-size: 11.5px; font-weight: 700; margin-right: 4px; vertical-align: 1px; }
+.group { background: var(--white); border: 1px dashed var(--p2b); border-radius: 10px; padding: 8px 12px 10px; }
+.group .gt { font-size: 13px; font-weight: 700; color: var(--p2t); text-align: center; }
+.tree { display: grid; grid-template-columns: auto 18px auto 18px auto 18px auto; align-items: center; justify-content: center; gap: 6px; margin-top: 7px; }
+.tree .n { font-size: 11.5px; background: #EEF4FC; border: 1px solid var(--p2b); border-radius: 7px; padding: 5px 8px; text-align: center; line-height: 1.35; }
+.tree .n b { font-size: 12px; white-space: nowrap; }
+.panel.p2 { gap: 26px; padding-bottom: 40px; }
+.tree .op { text-align: center; color: var(--muted); font-weight: 700; }
+.env { background: var(--env); border: 1.5px solid var(--envb); border-radius: 12px; padding: 11px 12px; display: grid; gap: 7px; }
+.env .ct { color: var(--p3t); }
+.env .gh { display: flex; gap: 8px; align-items: center; background: var(--white); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; font-weight: 700; color: #1C6B3A; }
+.env .gh small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; }
+.rew { background: var(--white); border: 1.5px solid var(--envb); border-radius: 12px; padding: 11px 12px; }
+.rew .ct { color: #B07A00; }
+.rw { display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; margin-top: 7px; font-size: 12.3px; line-height: 1.35; }
+.rw b { font-weight: 700; }
+.rw span { color: var(--muted); font-size: 11.3px; }
+.rw .w { font-weight: 700; color: var(--p2t); font-variant-numeric: tabular-nums; text-align: right; }
+.grpo { background: var(--grpo); border: 1.5px solid var(--grpob); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 50px 1fr; gap: 10px 12px; align-items: start; }
+.grpo .gico { color: var(--grpot); grid-row: span 2; display: grid; place-items: center; padding-top: 2px; }
+.grpo h3 { font-size: 15.5px; font-weight: 800; color: var(--grpot); }
+.gcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.gcol.wide { grid-column: span 2; }
+.gcol { background: rgba(255,255,255,0.75); border-radius: 9px; padding: 8px 10px; }
+.gcol h4 { font-size: 12.5px; font-weight: 700; color: var(--grpot); margin-bottom: 4px; }
+.formula { font-size: 11.8px; line-height: 1.6; }
+.formula b { font-weight: 700; }
+.formula .dist { color: #7A4FB8; font-weight: 600; }
+.formula .ind { display: inline-block; padding-left: 34px; }
+.rew .dct { color: #7A4FB8; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.rew .dct small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+.dformula { margin-top: 6px; background: #F6F1FC; border-radius: 7px; padding: 5px 8px; font-size: 11.8px; font-weight: 600; color: #5B3A92; line-height: 1.45; }
+.dformula span { font-weight: 500; color: var(--muted); font-size: 11px; }
+.rw .w.dw { color: #7A4FB8; }
+
+.tests { display: grid; gap: 22px; }
+.t { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; color: var(--p3t); }
+.t .tx { color: var(--ink); font-size: 13.3px; font-weight: 700; line-height: 1.3; }
+.t .tx small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.t.refine { background: var(--purple); border-color: var(--purpleb); color: var(--purplet); }
+.t.final { background: #EAF6EC; border: 1.5px solid var(--p3b); }
+.robots { display: flex; gap: 2px; }
+</style></head>
+<body>
+<div id="canvas">
+  <div class="cols">
+    <!-- ============ Panel 1 ============ -->
+    <section class="panel p1" id="p1">
+      <div class="ph"><h2>1. Teacher Reasoning &amp; Subtask SFT</h2><p>Write step-by-step reasons from the train ground truth, then train the two Students</p></div>
+      <div class="row2">
+        <div class="card datacard" id="data">
+          <div class="ct" style="justify-content:center">Seoul KTDB 2021</div>
+          <div class="blk"><i data-ic="users" class="lg" style="color:#2F4F7F"></i><b>Person attributes</b><span>gender · age · occupation<br>can drive · home dong</span></div>
+          <div class="blk"><i data-ic="route" class="lg" style="color:#2F4F7F"></i><b>Observed trip chain</b><span>activities · dong<br>dwell time · mode</span></div>
+          <div><span class="pill" style="background:#E4E9F2;color:#2F4F7F">70 / 10 / 20 split</span></div>
+        </div>
+        <div class="card teacher" id="teacher">
+          <div class="ct"><i data-ic="chat" class="lg" style="color:var(--p1t)"></i><div>Teacher LLM<small>reads the ground truth, writes the reasons</small></div></div>
+          <div class="sub">Step-by-step reasons<br><span style="font-weight:500;font-size:11.5px">(pseudo-label data)</span></div>
+          <ul class="b">
+            <li>Persona: who the person is</li>
+            <li>Reasoning①: why this activity sequence</li>
+            <li>Reasoning②: why these dongs, dwell times and modes</li>
+          </ul>
+        </div>
+      </div>
+      <div class="sft" id="sft"><div>SFT<br><span style="font-weight:500;color:var(--muted)">ground truth + Teacher reasons<br>Qwen3.5-2B · LoRA</span></div></div>
+      <div class="row2" id="students">
+        <div class="card student s1c" id="s1">
+          <div class="ct"><i data-ic="robot" class="xl" style="color:var(--blue)"></i>Student ①<small>(Activity Planner)</small></div>
+          <ul class="b">
+            <li>Writes the persona</li>
+            <li>Writes Reasoning①</li>
+            <li>Writes the activity sequence</li>
+          </ul>
+        </div>
+        <div class="card student s2c" id="s2">
+          <div class="ct"><i data-ic="robot" class="xl" style="color:var(--green)"></i>Student ②<small>(Detail Planner)</small></div>
+          <ul class="b">
+            <li>Writes Reasoning②</li>
+            <li>Dong of each activity</li>
+            <li>Dwell time of each activity</li>
+            <li>Mode of each trip</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Panel 2 ============ -->
+    <section class="panel p2" id="p2">
+      <div class="ph"><h2>2. Long-Horizon Dense Reward Fine-Tuning</h2><p>18,574 train people · generate whole trip chains, then fine-tune each Student with individual and population-distribution rewards</p></div>
+      <div class="rollout" id="rollout">
+        <div class="rt">Rollout <span>(how one trip chain of one person is made)</span></div>
+        <div class="steps">
+          <div class="step" id="st1">
+            <div class="hd"><span class="num">1</span>Persona &amp; Activity<small>(Student①)</small></div>
+            <div class="icons"><i data-ic="doc" class="lg"></i></div>
+            <ul class="b"><li>Persona</li><li>Reasoning①</li><li>Activity Sequence</li></ul>
+          </div>
+          <div class="step" id="st2">
+            <div class="hd"><span class="num">2</span>Location · Dwell · Mode<small>(Student②)</small></div>
+            <div class="icons"><i data-ic="pin" class="lg"></i><i data-ic="clock" class="lg"></i><i data-ic="car" class="lg"></i></div>
+            <ul class="b"><li>Reasoning②</li><li>Dong per activity</li><li>Dwell time</li><li>Mode per trip</li></ul>
+          </div>
+          <div class="step envstep" id="st3">
+            <div class="hd"><span class="num" style="background:var(--p3t)">3</span>Environment<small>(fixed module, not learned)</small></div>
+            <div class="gh"><i data-ic="pin"></i><div>POI grounding<small>5 candidates in the predicted dong<br>home is fixed</small></div></div>
+            <div class="gh"><i data-ic="map"></i><div>GraphHopper routing<small>walk · car · bus<br>subway · bicycle</small></div></div>
+            <div class="gh"><i data-ic="clock"></i><div>Schedule · constraint checks<small>1,440-minute day · car location continuity</small></div></div>
+          </div>
+          <div class="step out" id="st4">
+            <div class="hd">Trip Chain<small>(as realized by the environment)</small></div>
+            <div class="icons"><i data-ic="route" class="lg"></i></div>
+            <ul class="b"><li>Visited POIs, routes</li><li>Arrival and departure times</li><li>Feasibility, violations</li><li>Decision trace of every step</li></ul>
+          </div>
+        </div>
+        <div class="group" id="group">
+          <div class="gt">Group sampling · several answers for the same person, compared with each other</div>
+          <div class="tree">
+            <div class="n"><b>1 train person</b></div><div class="op">→</div>
+            <div class="n"><b>Student① × 2</b><br>seed 42, 43</div><div class="op">→</div>
+            <div class="n"><b>Student② × 2</b><br>per Student① answer</div><div class="op">=</div>
+            <div class="n"><b>4 rollouts</b><br>per person</div>
+          </div>
+        </div>
+      </div>
+      <div class="p2low">
+        <div class="grpo" id="grpo">
+          <div class="gico"><i data-ic="network" class="xl"></i></div>
+          <h3>Policy update with future rewards (GRPO)</h3>
+          <div class="gcols">
+            <div class="gcol wide">
+              <h4>Long-horizon Return (γ = 0.95)</h4>
+              <div class="formula"><b>R<sub>S2</sub></b> = Loc + Dwell + Mode + γ·(Feas + Start)<br><span class="dist ind">+ 1.04·D<sub>mode</sub> + 0.43·D<sub>departure</sub></span><br><b>R<sub>S1</sub></b> = Act + γ·(Loc + Dwell + Mode) + γ²·(Feas + Start)<br><span class="dist ind">+ 0.82·D<sub>sequence</sub></span><br><span style="color:var(--muted)">Later steps and the final outcome also count for earlier decisions · Feas = Feasibility · individual : distribution = 50 : 50 (in the score spread among one person's answers)</span></div>
+            </div>
+            <div class="gcol">
+              <h4>Group comparison (advantage)</h4>
+              <ul class="b"><li>Student②: compared within one Student① answer</li><li>Student①: compared among one person's answers</li><li>Minus the group mean, divided by the overall standard deviation</li></ul>
+            </div>
+            <div class="gcol">
+              <h4>Clipped update</h4>
+              <ul class="b"><li>Probability ratio to SFT limited to 0.8–1.2</li><li>Penalty for moving away from SFT</li><li>Students ① and ② updated separately</li></ul>
+            </div>
+          </div>
+        </div>
+        <div class="rew" id="rew">
+          <div class="ct"><i data-ic="trophy" class="lg"></i>Dense Rewards</div>
+          <div class="rw">
+            <div><b>Activity</b> <span>similarity to the true sequence</span></div><div class="w">×1.0</div>
+            <div><b>Location</b> <span>same dong</span></div><div class="w">×1.0</div>
+            <div><b>Dwell</b> <span>dwell-time error</span></div><div class="w">×1.0</div>
+            <div><b>Mode</b> <span>main mode of each trip</span></div><div class="w">×0.5</div>
+            <div><b>Feasibility</b> <span>feasible · violations</span></div><div class="w">×1.5</div>
+            <div><b>Start time</b> <span>realized activity starts</span></div><div class="w">×1.0</div>
+          </div>
+          <div class="ct dct"><i data-ic="users" class="lg"></i><div>Distribution Rewards<small>shares compared among similar people</small></div></div>
+          <div class="dformula">D = clip(log P − log Q, ±3)<br><span>P = train GT share · Q = rollout share<br>cells: occupation × age group × gender</span></div>
+          <div class="rw">
+            <div><b>Sequence pattern</b> <span>Student①</span></div><div class="w dw">×0.82</div>
+            <div><b>Trip mode</b> <span>Student②</span></div><div class="w dw">×1.04</div>
+            <div><b>First departure</b> <span>Student②</span></div><div class="w dw">×0.43</div>
+            <div><b>Trip distance</b> <span>Student②</span></div><div class="w dw">optional</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Panel 3 ============ -->
+    <section class="panel p3" id="p3">
+      <div class="ph"><h2>3. Testing (Inference)</h2><p>5,307 test people · never used in training</p></div>
+      <div class="tests">
+        <div class="t" id="t1"><i data-ic="user" class="lg"></i><div class="tx">New person<small>(demographics + residence)</small></div></div>
+        <div class="t" id="t2"><div class="robots"><i data-ic="robot" class="lg" style="color:var(--blue)"></i><i data-ic="robot" class="lg" style="color:var(--green)"></i></div><div class="tx">Trained Student ① ②<small>(GRPO adapter)</small></div></div>
+        <div class="t" id="t3"><i data-ic="route" class="lg"></i><div class="tx">Trip-chain generation<small>(with the decision trace)</small></div></div>
+        <div class="t" id="t4"><i data-ic="map" class="lg"></i><div class="tx">Environment check<small>(POI · GraphHopper · schedule)</small></div></div>
+        <div class="t refine" id="t5"><i data-ic="refresh" class="lg"></i><div class="tx">Iterative Refinement<small>if needed: Lv.1 new POIs → Lv.2 new Student② answer → Lv.3 from Student①</small></div></div>
+        <div class="t final" id="t6"><i data-ic="check" class="lg"></i><div class="tx">Final trip chain<small>(feasible schedule + reasoning)</small></div></div>
+        <div class="t" id="t7"><i data-ic="chart" class="lg"></i><div class="tx">Evaluation<small>SFT vs GRPO (pre/post-RL)</small></div></div>
+      </div>
+    </section>
+  </div>
+
+  <svg id="arrows"></svg>
+</div>
+<script src="icons.js"></script>
+<script>
+document.fonts.ready.then(() => {
+  initArrows();
+  const data = box('data'), teacher = box('teacher'), sft = box('sft'), s1 = box('s1'), s2 = box('s2'), students = box('students');
+  const p1 = box('p1'), p2 = box('p2'), p3 = box('p3');
+  const rollout = box('rollout'), st1 = box('st1'), st2 = box('st2'), st3 = box('st3'), st4 = box('st4'), group = box('group');
+  const rew = box('rew'), grpo = box('grpo');
+
+  // Panel 1
+  arrow([[data.r, data.cy], [teacher.l - 2, data.cy]]);
+  arrow([[data.cx, data.b], [data.cx, s1.t - 2]]);
+  arrow([[teacher.cx, teacher.b], [teacher.cx, s2.t - 2]]);
+  // Panel 1 -> rollout
+  const g12 = (p1.r + p2.l) / 2;
+  arrow([[students.r, students.cy], [g12, students.cy], [g12, st1.cy], [rollout.l - 2, st1.cy]]);
+  label(g12, (students.cy + st1.cy) / 2, 'SFT models', { bg: '#FFFFFF' });
+  // Rollout steps
+  arrow([[st1.r, st1.cy], [st2.l - 2, st1.cy]]);
+  arrow([[st2.r, st1.cy], [st3.l - 2, st1.cy]]);
+  arrow([[st3.r, st1.cy], [st4.l - 2, st1.cy]]);
+  // Rollout result -> rewards -> GRPO
+  arrow([[rew.cx, rollout.b], [rew.cx, rew.t - 2]]);
+  arrow([[rew.l, rew.cy], [grpo.r + 2, rew.cy]]);
+  // GRPO -> rollout (next round)
+  const lx = grpo.cx - 40;
+  arrow([[lx, grpo.t], [lx, rollout.b + 2]]);
+  label(lx + 10, (grpo.t + rollout.b) / 2 + 5, 'Roll out again with the updated policy', { anchor: 'start', bg: '#EEF4FC' });
+  // Panel 2 -> Panel 3
+  const t2 = box('t2');
+  const g23 = (p2.r + p3.l) / 2;
+  const by = Math.max(grpo.b, rew.b) + 20;
+  arrow([[grpo.cx - 150, grpo.b], [grpo.cx - 150, by], [g23, by], [g23, t2.cy], [t2.l - 2, t2.cy]]);
+  label(grpo.cx - 140, by + 4, 'Trained adapters → testing', { anchor: 'start', bg: '#EEF4FC' });
+  // Panel 3 chain
+  for (let i = 1; i < 7; i++) {
+    const a = box('t' + i), b = box('t' + (i + 1));
+    arrow([[a.cx, a.b], [a.cx, b.t - 2]]);
+  }
+  window.__ready = true;
+});
+</script>
+</body></html>

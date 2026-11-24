@@ -27,13 +27,11 @@ OUTPUT_HOME = Path(os.environ.get("OUTPUT_HOME", Path.home() / "outputs")).expan
 DATA_ROOT = SHARED_DATA_ROOT / PROJECT
 OUTPUT_ROOT = OUTPUT_HOME / PROJECT
 
-# Upstream stage (KTDB preprocessing, the Teacher and the SFT trainers). Its code
-# is vendored unmodified under third_party/ (override with TRIPCHAIN_1015_CODE to
-# use another checkout); its data stays in its own folder under DATA_HOME.
+# The first stage (KTDB preprocessing and the Teacher labels of the v1 split) keeps
+# its historical folders: data under DATA_HOME/tripchain_1015, Teacher labels under
+# OUTPUT_HOME/tripchain_1015/persona-rationale-multi-country-qwen35.
 TRIPCHAIN_1015_DATA = SHARED_DATA_ROOT / "tripchain_1015"
-TRIPCHAIN_1015_CODE = Path(
-    os.environ.get("TRIPCHAIN_1015_CODE", Path(__file__).resolve().parents[1] / "third_party" / "tripchain_1015")
-).expanduser()
+TEACHER_OUTPUT_ROOT = OUTPUT_HOME / "tripchain_1015" / "persona-rationale-multi-country-qwen35"
 
 
 def _hf_hub_cache() -> Path:

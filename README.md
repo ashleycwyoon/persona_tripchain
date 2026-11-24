@@ -30,24 +30,15 @@ personas and reasoning, then fine-tuned with dense rewards from the environment
 
 ## 1. How the framework works
 
-```mermaid
-flowchart TD
-    D["Demographics + residence"] --> S1
-    S1["Student1<br/>persona, reasoning1, activity sequence"] --> S2
-    S2["Student2<br/>reasoning2, location and dwell per activity, mode per trip"] --> ENV
-    ENV["Environment (not learned)<br/>POI grounding, GraphHopper routing, scheduling, hard feasibility"] --> DAY
-    DAY["Realized day + decision trace"] --> R
-    R["Rewards<br/>individual: activity, location, dwell, trip mode, feasibility, start time<br/>distribution: sequence, trip mode, first departure, trip distance"]
-    R -->|"GRPO update, train split"| S1
-    R -->|"GRPO update, train split"| S2
-    DAY -->|"infeasible, test time only"| REF
-    REF["Iterative refinement<br/>Lv.1 new POIs, Lv.2 new Student2 answer, Lv.3 new Student1 answer"] --> ENV
-```
+![PersonaTC framework: Teacher reasoning and subtask SFT, long-horizon dense-reward fine-tuning, and testing](docs/figures/framework.png)
+
+The figure shows round 1 on the v2 split (weights of `configs/framework_grpo_train_v2.yaml`).
+Its source is `docs/figures/src/framework.html`.
 
 | Stage | What happens | Where |
 |---|---|---|
 | Ground truth | KTDB trips become one day per person (03:00 to 03:00), split train / validation / test = 70 / 10 / 20 | `scripts/rebuild_ground_truth_v2.py` |
-| Teacher | A large LLM writes the persona and the reasoning that explain each observed day | `third_party/tripchain_1015` |
+| Teacher | A large LLM writes the persona and the reasoning that explain each observed day | `scripts/run_teacher_2gpu.py`, `tripchain/ktdb/` |
 | SFT | Each Student learns to write the Teacher text and the observed decisions | `scripts/train_student1.py`, `scripts/train_student2_tripmode.py` |
 | Rollout | Student1, Student2, then the environment, for every person | `scripts/run_student_inference_2gpu.py`, `scripts/run_rollouts_parallel.py` |
 | GRPO | Group-relative policy update from the rollout rewards | `scripts/prepare_policy_updates.py`, `scripts/train_group_relative.py` |
@@ -140,9 +131,11 @@ clipped, reference-regularized policy-gradient step
 personaTC/
 ├── configs/        run and training configurations
 ├── scripts/        command-line entry points and pipeline scripts
-├── tripchain/      the Python package (environment, rewards, inference)
-├── tests/          unit tests
-└── third_party/    upstream code this framework builds on, vendored unmodified
+├── tripchain/      the Python package (environment, rewards, inference, KTDB Teacher data)
+├── prompts/        the Teacher prompt
+├── templates/      chat template used for the SFT loss mask
+├── docs/figures/   the framework figure and its source
+└── tests/          unit tests
 ```
 
 ### `tripchain/` — package
@@ -168,11 +161,16 @@ personaTC/
 | `rollout.py` | One rollout row: decision trace, environment result, rewards, status |
 | `refinement.py` | Bounded refinement of an infeasible day (Lv.1, Lv.2, Lv.3) |
 | `population_metrics.py` | Jensen-Shannon divergences for the population and persona subgroups |
+| `ktdb/ktdb_two_stage_teacher.py` | Teacher inputs, prompt construction, answer parsing and validation |
+| `ktdb/ktdb_student1.py`, `ktdb_student2.py`, `ktdb_student_common.py` | Build the Student SFT chat examples from the Teacher labels |
 
 ### `scripts/` — data preparation
 
 | File | Role |
 |---|---|
+| `prepare_ktdb_training_data.py` | Step 1: KTDB 2021 preprocessing: Seoul residents, person-level 90 / 10 split, demographics, activity sequences, spatial targets, location codebook |
+| `ktdb_admin_registry.py`, `korean_admin_english.py` | Read the administrative-code workbook and render Korean administrative names in English |
+| `run_teacher_2gpu.py`, `teacher_worker.py` | Steps 2 and 5: launch one Teacher worker (vLLM) per GPU and show progress |
 | `prepare_residence_data.py` | Adds the surveyed home location to the v1 train / test demographics |
 | `build_train_ground_truth.py` | Joins the v1 train targets into one ground-truth file |
 | `build_trip_mode_data.py` | Adds the main mode of every trip to the v1 ground truth |
@@ -180,15 +178,15 @@ personaTC/
 | `build_teacher_relabel_inputs.py` | Teacher inputs for the people whose day changed from v1 to v2 |
 | `build_sft_v2.py` | Student1 and Student2 SFT datasets on the v2 train and validation splits |
 | `build_context_v2.py` | Step 15: v2 data with household, student and work-status context in the demographics (`processed_v2ctx`) |
-| `teacher_ctx.py`, `teacher_ctx_python` | Step 15: runs the upstream Teacher with that context in its prompt, without editing `third_party/` |
+| `teacher_ctx.py`, `teacher_ctx_python` | Step 15: runs the Teacher with that context in its prompt (the Teacher code itself is not changed) |
 | `build_sft_v2ctxt.py` | Step 15: SFT datasets whose targets come from the context Teacher (`processed_v2ctxt`) |
 
 ### `scripts/` — training, inference, environment, evaluation
 
 | File | Role |
 |---|---|
-| `train_student1.py` | Student1 SFT (wraps the upstream QLoRA trainer) |
-| `train_student2_tripmode.py` | Student2 SFT with per-trip modes (wraps the upstream QLoRA trainer) |
+| `train_student1.py` | Student1 SFT (QLoRA) |
+| `train_student2_tripmode.py` | Student2 SFT (QLoRA) with per-trip modes |
 | `run_student_inference.py` | Student1 or Student2 inference on one GPU |
 | `run_student_inference_2gpu.py` | The same on several GPUs, one shard per GPU |
 | `repair_student2_failures.py` | New Student1 then Student2 answers for people without a valid Student2 answer |
@@ -244,14 +242,14 @@ personaTC/
 |---|---|
 | `tests/test_framework.py` | Unit tests of the environment, rewards, GRPO grouping and answer validation (no GPU, data or routing server needed) |
 | `pyproject.toml` | Dependencies and the pytest and ruff settings |
+| `prompts/rationalizer_prompt.md` | The Teacher prompt |
+| `templates/qwen35_text_assistant_only.jinja` | Chat template that marks the assistant turn for the SFT loss mask |
+| `docs/figures/` | `framework.png` and its HTML source (`src/`) |
 
-### `third_party/tripchain_1015/` — upstream stage
-
-Byte-identical copies of the files this framework uses from the upstream
-`tripchain_1015` project (commit `637b7b0`). See its `README.md` for the file list.
-It provides the KTDB preprocessing, the Teacher, the SFT example builders and the
-QLoRA trainers. Do not edit these files; `tripchain/paths.py` finds them, and the
-`TRIPCHAIN_1015_CODE` environment variable can point to another checkout.
+The KTDB preprocessing, the Teacher, the SFT example builders and the QLoRA trainers
+come from the earlier `tripchain_1015` project (commit `637b7b0`). They now live in
+`scripts/`, `tripchain/ktdb/`, `prompts/` and `templates/`; only their imports and paths
+were adapted.
 
 ## 3. Requirements
 
@@ -284,7 +282,7 @@ else lives:
 
 Configs may use `${DATA_HOME}`, `${OUTPUT_HOME}`, `${DATA_ROOT}`
 (`$DATA_HOME/tripchain_1030`), `${OUTPUT_ROOT}` (`$OUTPUT_HOME/tripchain_1030`) and
-`${HF_HUB_CACHE}`. The folder names `tripchain_1015` (upstream stage) and
+`${HF_HUB_CACHE}`. The folder names `tripchain_1015` (preprocessing and first Teacher run) and
 `tripchain_1030` (this framework) are the historical project names.
 
 ```
@@ -292,7 +290,7 @@ $DATA_HOME/
 ├── KTDB_2021/①개인특성.csv, ②이동특성.csv        raw survey: people and trips (not distributed here)
 ├── 행정동코드_20210726(말소코드포함).xlsx         administrative-code workbook
 ├── south-korea-260714.osm.pbf                     OSM extract read by GraphHopper
-├── tripchain_1015/processed/                      upstream outputs (step 1)
+├── tripchain_1015/processed/                      preprocessing outputs (step 1)
 │   ├── train/, test/                              v1 split: demographics and targets
 │   ├── ktdb_location_whitelist.json               location codebook for Student2 validation
 │   └── testing/seoul_poi_catalog_by_admin_dong.parquet   POI catalog (provided, see below)
@@ -337,16 +335,14 @@ export DATA_HOME=~/data OUTPUT_HOME=~/outputs          # the defaults
 export HF_HUB_CACHE=~/.cache/huggingface/hub           # where model weights are stored
 V2_DATA=$DATA_HOME/tripchain_1030/processed_v2
 V2=$OUTPUT_HOME/tripchain_1030/v2
-UPSTREAM=third_party/tripchain_1015
-TEACHER=$UPSTREAM/persona-rationale-multi-country-qwen35
 
 python -m pytest -q                                     # 41 tests, no GPU or data needed
 ```
 
-### Step 1. Upstream preprocessing (v1 split)
+### Step 1. KTDB preprocessing (v1 split)
 
 ```bash
-python $UPSTREAM/scripts/prepare_ktdb_training_data.py
+python scripts/prepare_ktdb_training_data.py
 ```
 
 Reads the raw survey and writes `$DATA_HOME/tripchain_1015/processed/`: Seoul
@@ -357,12 +353,12 @@ and spatial targets, and the location codebook. Put the POI catalog under
 ### Step 2. Teacher labels
 
 ```bash
-python $TEACHER/scripts/09d_run_ktdb_teacher_2gpu.py --gpus 0,1 --download-dir "$HF_HUB_CACHE"
+python scripts/run_teacher_2gpu.py --gpus 0,1
 ```
 
 The Teacher (Qwen2.5-32B, served by vLLM) reads each train person's observed day and
 writes the persona and reasoning that explain it, using the prompt in
-`$TEACHER/prompts/rationalizer_prompt.md`. Output: two shard files
+`prompts/rationalizer_prompt.md`. Output: two shard files
 `ktdb_teacher_qwen32b_english_demographics_shard{0,1}.jsonl` with their
 `.complete.json` manifests under
 `$OUTPUT_HOME/tripchain_1015/persona-rationale-multi-country-qwen35/reports/`.
@@ -398,7 +394,7 @@ have Teacher labels.
 
 ```bash
 python scripts/build_teacher_relabel_inputs.py
-python $TEACHER/scripts/09d_run_ktdb_teacher_2gpu.py --gpus 0,1 --download-dir "$HF_HUB_CACHE" \
+python scripts/run_teacher_2gpu.py --gpus 0,1 \
   --demographics $V2_DATA/teacher_relabel/demographics.jsonl \
   --activity $V2_DATA/teacher_relabel/activity_sequence.jsonl \
   --spatial $V2_DATA/teacher_relabel/location_dwell_mode_preference.jsonl \
@@ -592,8 +588,8 @@ Both stop before GRPO unless `RUN_GRPO=1`, so the context Pre-RL can be compared
 with Pre-RL before spending the GRPO time. They need GPUs 0 and 1, a running
 GraphHopper, and the step-14 results they compare against (`$V2/noendhome`,
 `$V2/seqboost`); `run_v2ctxt.sh` also reads the `run_v2ctx.sh` Pre-RL rollouts.
-`scripts/teacher_ctx.py` changes the Teacher prompt in memory and leaves
-`third_party/` untouched; `python scripts/teacher_ctx.py --show-prompt <person_id>`
+`scripts/teacher_ctx.py` changes the Teacher prompt in memory, so the step-2 Teacher
+stays as it is; `python scripts/teacher_ctx.py --show-prompt <person_id>`
 prints the prompt one person gets. `build_sft_v2ctxt.py` stops if a user message
 differs from `processed_v2ctx/sft` in anything but the Teacher text Student2 reads.
 
@@ -660,5 +656,4 @@ python -m pytest -q          # unit tests
 ruff check . && ruff format --check tripchain scripts tests
 ```
 
-The tests need neither a GPU, the data, nor GraphHopper. Code under `third_party/`
-is excluded from linting and formatting because it is kept identical to its source.
+The tests need neither a GPU, the data, nor GraphHopper.

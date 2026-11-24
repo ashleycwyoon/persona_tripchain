@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Run the upstream KTDB Teacher with household / student / work context.
+"""Run the KTDB Teacher with household / student / work context.
 
-The upstream Teacher (third_party/tripchain_1015/persona-rationale-multi-country-qwen35,
-09c/09d) shows only gender, age, occupation and can_drive, so its personas contradict the
+The Teacher (scripts/run_teacher_2gpu.py, scripts/teacher_worker.py) shows only gender, age, occupation and can_drive, so its personas contradict the
 context the v2ctx Students read (55% of multi-member households were described
-as living alone). This wrapper leaves the vendored files untouched: it replaces
+as living alone). This wrapper leaves the Teacher code as it is: it replaces
 build_user_prompt and adds one consistency rule to SYSTEM_PROMPT in the loaded
 module, then runs the original worker script.
 
@@ -12,8 +11,8 @@ module, then runs the original worker script.
              -> processed_v2ctx/teacher_input/{demographics,activity_sequence,
                 location_dwell_mode_preference}.jsonl (v2 train + validation people,
                 demographics with the build_context_v2.py context)
-    teacher  09d_run_ktdb_teacher_2gpu.py --python scripts/teacher_ctx_python ...
-             (09d starts `<python> 09c_abduce_ktdb_two_stage.py ...`; teacher_ctx_python
+    teacher  run_teacher_2gpu.py --python scripts/teacher_ctx_python ...
+             (it starts `<python> teacher_worker.py ...`; teacher_ctx_python
              runs this file with those arguments)
 """
 
@@ -27,9 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tripchain.paths import DATA_ROOT, TRIPCHAIN_1015_CODE  # noqa: E402
+from tripchain.paths import DATA_ROOT  # noqa: E402
 
-TEACHER_REPO = TRIPCHAIN_1015_CODE / "persona-rationale-multi-country-qwen35"
 SFT_BUILD = DATA_ROOT / "processed_v2/sft_build"
 CTX = DATA_ROOT / "processed_v2ctx"
 INPUT_DIR = CTX / "teacher_input"
@@ -75,8 +73,7 @@ def context_lines(d: dict) -> list[str]:
 
 
 def patch() -> None:
-    sys.path.insert(0, str(TEACHER_REPO))
-    import src.data.ktdb_two_stage_teacher as teacher
+    import tripchain.ktdb.ktdb_two_stage_teacher as teacher
 
     original = teacher.build_user_prompt
     if ANCHOR not in teacher.SYSTEM_PROMPT:
@@ -125,7 +122,7 @@ def main() -> None:
         return
     if sys.argv[1:2] == ["--show-prompt"]:  # --show-prompt <person_id>
         patch()
-        import src.data.ktdb_two_stage_teacher as teacher
+        import tripchain.ktdb.ktdb_two_stage_teacher as teacher
 
         records = teacher.load_teacher_records(
             INPUT_DIR / "demographics.jsonl",

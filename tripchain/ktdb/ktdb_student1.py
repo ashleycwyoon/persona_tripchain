@@ -1,10 +1,11 @@
 """Build KTDB Student 1 SFT examples from completed teacher annotations."""
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Iterable
 
-from src.data.ktdb_student_common import (
+from tripchain.ktdb.ktdb_student_common import (
     DEFAULT_TEACHER_SHARDS,
     compact_json,
     deterministic_split,

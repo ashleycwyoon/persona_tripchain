@@ -42,12 +42,11 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tripchain.paths import DATA_ROOT, SHARED_DATA_ROOT, TRIPCHAIN_1015_CODE  # noqa: E402
+from tripchain.paths import DATA_ROOT, SHARED_DATA_ROOT  # noqa: E402
 from tripchain.residence import augment_demographics  # noqa: E402
 from tripchain.trip_modes import ktdb_stages, main_mode, mode_preference_from_trips  # noqa: E402
 
-# KTDB helpers of the upstream preprocessing.
-sys.path.insert(0, str(TRIPCHAIN_1015_CODE / "scripts"))
+# KTDB helpers of the preprocessing (scripts/).
 from ktdb_admin_registry import load_admin_registry  # noqa: E402
 from prepare_ktdb_training_data import (  # noqa: E402
     admin_dong,

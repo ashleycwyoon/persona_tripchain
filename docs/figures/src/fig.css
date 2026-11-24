@@ -1,0 +1,33 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1B2533; --muted: #4F5B6B; --line: #C9D2DE; --white: #FFFFFF;
+  --navy: #1E3556;
+  --p1: #F4F1FC; --p1b: #B8A8E8; --p1t: #46368C;
+  --p2: #EEF4FC; --p2b: #9CBBE6; --p2t: #1E4C8A;
+  --p3: #EEF8F0; --p3b: #96CBA2; --p3t: #2B6A3B;
+  --env: #E8F5EB; --envb: #84C495;
+  --rew: #FFFFFF;
+  --grpo: #FFF2E6; --grpob: #F0A35E; --grpot: #B4520F;
+  --pink: #FCE8EF; --pinkb: #EDA4BE; --pinkt: #B0325F;
+  --purple: #F3EDFB; --purpleb: #B49AE0; --purplet: #6A43B5;
+  --blue: #2F6FDB; --green: #2F9E5B; --orange: #D9702A; --slate: #74839A; --trip: #27303B;
+  --arrow: #33475F;
+}
+body { font-family: "Noto Sans KR", "Noto Sans", "Inter", "Helvetica Neue", Arial, "DejaVu Sans", sans-serif; color: var(--ink); background: #FFFFFF; }
+#canvas { position: relative; width: 1600px; padding: 18px 20px 16px; background: #FFFFFF; }
+.titlebar { background: var(--navy); color: #FFFFFF; border-radius: 12px; padding: 12px 22px; display: flex; align-items: baseline; justify-content: center; gap: 16px; }
+.titlebar h1 { font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }
+.titlebar span { font-size: 13.5px; font-weight: 500; color: #BFD0E8; }
+.ic { width: 22px; height: 22px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ic.lg { width: 34px; height: 34px; stroke-width: 1.6; }
+.ic.xl { width: 44px; height: 44px; stroke-width: 1.5; }
+ul.b { list-style: none; display: grid; gap: 3px; }
+ul.b li { position: relative; padding-left: 12px; font-size: 12.5px; line-height: 1.45; }
+ul.b li::before { content: ""; position: absolute; left: 2px; top: 7.5px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+.foot { margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; }
+#arrows { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+#arrows path { fill: none; stroke: var(--arrow); stroke-width: 2.2; }
+#arrows path.dash { stroke-dasharray: 6 5; }
+#arrows text { font-family: "Noto Sans KR", "Noto Sans", "Inter", "Helvetica Neue", Arial, "DejaVu Sans", sans-serif; font-size: 12px; font-weight: 600; fill: var(--arrow); }
+#arrows rect.lbl { fill: #FFFFFF; }
