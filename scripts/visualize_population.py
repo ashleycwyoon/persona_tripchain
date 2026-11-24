@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Distribution-level comparison of the Ground Truth with two to four model populations.
+"""Distribution-level comparison of the Ground Truth with two to five model populations.
 
 Each `--population LABEL=ROLLOUTS` is one generated population (e.g. Pre-RL and
 Post-RL rollouts of the same people).
@@ -48,7 +48,7 @@ DAY = 1440
 # Populations in drawing order: the Ground Truth, then the --population labels
 # (set in main()). Model populations take MODEL_COLORS in the order given.
 POPS: tuple[str, ...] = ("Ground Truth",)
-MODEL_COLORS = ("#3b7dd8", "#e8833a", "#2f8a55", "#8e5bc0")
+MODEL_COLORS = ("#3b7dd8", "#e8833a", "#2f8a55", "#8e5bc0", "#c94f6d")
 COLORS = {"Ground Truth": "#4d4d4d", "Teacher": "#4d4d4d"}
 MODES = ["walk", "bus", "subway", "car_driver", "car_passenger", "taxi", "bicycle", "other_bus"]
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -701,7 +701,7 @@ def main() -> None:
         action="append",
         required=True,
         metavar="LABEL=ROLLOUTS",
-        help="a model population; give two to four",
+        help="a model population; give two to five",
     )
     parser.add_argument("--output", required=True, help="directory for the figures and summary.json")
     parser.add_argument(

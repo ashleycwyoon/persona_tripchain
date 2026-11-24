@@ -179,6 +179,9 @@ personaTC/
 | `rebuild_ground_truth_v2.py` | Builds the v2 ground truth (clipped day, merged short round trips) and the 70 / 10 / 20 split |
 | `build_teacher_relabel_inputs.py` | Teacher inputs for the people whose day changed from v1 to v2 |
 | `build_sft_v2.py` | Student1 and Student2 SFT datasets on the v2 train and validation splits |
+| `build_context_v2.py` | Step 15: v2 data with household, student and work-status context in the demographics (`processed_v2ctx`) |
+| `teacher_ctx.py`, `teacher_ctx_python` | Step 15: runs the upstream Teacher with that context in its prompt, without editing `third_party/` |
+| `build_sft_v2ctxt.py` | Step 15: SFT datasets whose targets come from the context Teacher (`processed_v2ctxt`) |
 
 ### `scripts/` — training, inference, environment, evaluation
 
@@ -199,7 +202,7 @@ personaTC/
 | `evaluate_population.py` | Metrics of one generated population against the ground truth |
 | `compare_rollouts.py` | Per-person comparison of two rollout files |
 | `bootstrap_pair.py` | Paired bootstrap confidence intervals between two populations |
-| `visualize_population.py` | Distribution figures of the ground truth and two to four populations |
+| `visualize_population.py` | Distribution figures of the ground truth and two to five populations |
 
 ### `scripts/` — pipelines
 
@@ -215,6 +218,9 @@ personaTC/
 | `run_v2_seqboost.sh` | Step 14: SeqBoost, both Students retrained with a stronger sequence reward and the trip-distance reward |
 | `run_v2_round2seq.sh` | Step 14: GRPO round 2 from the SeqBoost adapters, three Student1 answers per person |
 | `run_v2_round2bal.sh` | Step 14: the same round 2 with lower distribution weights, reusing the round2seq rollouts |
+| `run_v2_s1_multiseed.sh` | Step 14: two more Student1 validation answers per person (seeds 43, 44) for four models |
+| `run_v2ctx.sh` | Step 15: SFT, rollouts and GRPO with the context in the Student inputs |
+| `run_v2ctxt.sh` | Step 15: the same with SFT targets from the context Teacher |
 
 ### `configs/`
 
@@ -228,6 +234,8 @@ personaTC/
 | `framework_grpo_train_v2_round2seq.yaml` | Round 2 from the SeqBoost adapters, first-departure weight 0.86 |
 | `framework_grpo_train_v2_round2bal.yaml` | Round 2 from the SeqBoost adapters with lower distribution weights |
 | `framework_v2_validation.yaml`, `framework_v2_test.yaml` | Evaluation on the validation and test splits |
+| `student{1,2}_v2ctx_sft.yaml`, `framework_grpo_train_v2ctx.yaml`, `framework_v2ctx_validation.yaml` | Context run: SFT, GRPO train (SeqBoost rewards) and validation configs on `processed_v2ctx` |
+| `student{1,2}_v2ctxt_sft.yaml`, `framework_grpo_train_v2ctxt.yaml`, `framework_v2ctxt_validation.yaml` | The same for the context-Teacher run (`processed_v2ctxt` SFT data) |
 | `poi_category_map.yaml` | Which OSM tags and official building uses can host each activity type |
 
 ### Other files
@@ -291,14 +299,16 @@ $DATA_HOME/
 └── tripchain_1030/
     ├── processed/                                 v1 residence demographics and trip-mode ground truth (step 3)
     ├── processed_v2/                              v2 ground truth, split and SFT data (steps 4 to 6)
+    ├── processed_v2ctx/, processed_v2ctxt/        v2 data with context; SFT data of the context Teacher (step 15)
     └── external/GraphHopper/                      GraphHopper jar, JDK, config and GTFS (step 8)
 
 $OUTPUT_HOME/
 ├── tripchain_1015/persona-rationale-multi-country-qwen35/reports/   Teacher labels (step 2)
 └── tripchain_1030/
     ├── teacher_relabel_v2/                        Teacher labels for changed days (step 5)
-    ├── runs/student1_v2_sft, runs/student2_v2_sft SFT adapters (step 7)
-    └── v2/                                        rollouts, GRPO adapters, analyses (steps 10 to 14)
+    ├── teacher_ctx/                               Teacher labels written with the context (step 15)
+    ├── runs/student1_v2_sft, runs/student2_v2_sft SFT adapters (step 7; step 15 adds student{1,2}_v2ctx_sft and _v2ctxt_sft)
+    └── v2/                                        rollouts, GRPO adapters, analyses (steps 10 to 15)
 ```
 
 Two inputs are not produced by this repository and must be supplied:
@@ -549,6 +559,43 @@ for `pre_rl`, `round1` and `distmode_w0.94`. The reasons for the weights are wri
 next to them in the configs.
 The two round-2 configs read the SeqBoost adapters from
 `${OUTPUT_ROOT}/v2/seqboost/grpo`, so these pipelines expect the default `V2_ROOT`.
+
+`bash scripts/run_v2_s1_multiseed.sh` then writes two more Student1 validation answers
+per person (seeds 43 and 44) for Pre-RL, SeqBoost, round2seq and round2bal to
+`$V2/s1_multiseed/`. With the seed-42 answers they are three samples per person for
+per-person proper scoring rules; the scoring script is not in the repository yet.
+
+### Step 15. Household, student and work context
+
+The v2 Students read gender, age, occupation, driving ability and residence. These
+two pipelines add survey attributes of the kind a synthetic population carries:
+household size and composition, housing type, income band, number of cars, school
+level, and whether the person has a fixed workplace. Workplace and school locations
+and answers about the survey day are left out on purpose; the docstring of
+`scripts/build_context_v2.py` lists them. Rewards and weights are those of SeqBoost,
+and evaluation is on the validation split only.
+
+```bash
+python scripts/build_context_v2.py          # processed_v2 + context -> $DATA_HOME/tripchain_1030/processed_v2ctx/
+bash scripts/run_v2ctx.sh                   # SFT, train rollouts, context Pre-RL validation -> $V2/v2ctx/
+RUN_GRPO=1 bash scripts/run_v2ctx.sh        # GRPO and post-RL validation (finished steps are skipped)
+bash scripts/run_v2ctxt.sh                  # context Teacher, SFT data, SFT, rollouts, Pre-RL -> $V2/v2ctxt/
+RUN_GRPO=1 bash scripts/run_v2ctxt.sh       # GRPO and post-RL validation
+```
+
+| Pipeline | What it does |
+|---|---|
+| `run_v2ctx.sh` | Trains both Students on the v2 SFT examples with the context added to the user message. The targets are unchanged, so they were written by a Teacher that never saw the context. |
+| `run_v2ctxt.sh` | First runs the Teacher again on all 21,227 train and validation people with the context in its prompt and one added rule (the personas must agree with the listed facts), then builds `processed_v2ctxt/sft` from those labels and continues as `run_v2ctx.sh`. |
+
+Both stop before GRPO unless `RUN_GRPO=1`, so the context Pre-RL can be compared
+with Pre-RL before spending the GRPO time. They need GPUs 0 and 1, a running
+GraphHopper, and the step-14 results they compare against (`$V2/noendhome`,
+`$V2/seqboost`); `run_v2ctxt.sh` also reads the `run_v2ctx.sh` Pre-RL rollouts.
+`scripts/teacher_ctx.py` changes the Teacher prompt in memory and leaves
+`third_party/` untouched; `python scripts/teacher_ctx.py --show-prompt <person_id>`
+prints the prompt one person gets. `build_sft_v2ctxt.py` stops if a user message
+differs from `processed_v2ctx/sft` in anything but the Teacher text Student2 reads.
 
 ### Running individual steps by hand
 

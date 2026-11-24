@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Interpreter stand-in for the upstream 09d --python option: runs the Teacher worker
+# through scripts/teacher_ctx.py. PYTHON chooses the real interpreter (default "python").
+exec "${PYTHON:-python}" "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/teacher_ctx.py" "$@"
