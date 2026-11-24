@@ -438,7 +438,6 @@ def test_home_only_day_is_physically_feasible():
     environment.config = {
         "activity_constraints": {
             "require_start_home": True,
-            "require_end_home": True,
         },
         "scheduling": {
             "day_minutes": 1440,
@@ -805,7 +804,7 @@ def test_outside_seoul_activity_is_set_aside_like_tripchain_1015():
     from tripchain.rewards import feasibility_reward
 
     environment = TripChainEnvironment.__new__(TripChainEnvironment)
-    environment.config = {"activity_constraints": {"require_start_home": True, "require_end_home": True}}
+    environment.config = {"activity_constraints": {"require_start_home": True}}
 
     def record(home_scope, work_scope):
         place = lambda scope: {"location": {"scope": scope}, "dwell_time_min": 60}

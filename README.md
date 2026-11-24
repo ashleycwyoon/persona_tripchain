@@ -199,8 +199,8 @@ results of earlier ones. All of them evaluate on the validation split.
 
 Notes:
 
-- 3.7% of the ground-truth days end away from home, so every config accepts such days
-  (`require_end_home: false`).
+- 3.7% of the ground-truth days end away from home, so the environment accepts such
+  days; the last stay of any type lasts until the day ends.
 - The two sweep scripts take a weight and a GPU. `SPLITS="test validation"` adds the
   test split.
 - Run `python scripts/build_context_v2.py` once before the two context pipelines.

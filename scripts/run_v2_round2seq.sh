@@ -29,9 +29,6 @@ SB="$V2/seqboost/grpo"; UPD="$OUT/updates"; A1="$OUT/grpo/student1/final"; A2="$
 STATE="$OUT/state"; LOGS="$OUT/logs"; LOCK="$V2/.rollout.lock"; D="$OUT/post_rl_validation"
 mkdir -p "$STATE" "$LOGS" "$UPD" "$OUT/grpo/student1" "$OUT/grpo/student2" "$OUT/analysis" "$D"
 export INFERENCE_CPU_THREADS="${INFERENCE_CPU_THREADS:-4}" PYTHONUNBUFFERED=1
-for cfg in "$CFG" "$TRAIN_CFG"; do
-  grep -q "^  require_end_home: false" "$cfg" || { echo "require_end_home is not off in $cfg"; exit 2; }
-done
 $PY -c "
 import sys
 from pathlib import Path

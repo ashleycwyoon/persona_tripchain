@@ -13,7 +13,6 @@ from .poi import POIGrounder
 _ACTIVITY_FAILURES = (
     "NO_HOME",
     "START_ACTIVITY_NOT_HOME",
-    "END_ACTIVITY_NOT_HOME",
     "NO_POI",
     "NO_ACTIVITY_POI",
 )
@@ -78,8 +77,6 @@ class TripChainEnvironment:
                 raise ValueError("NO_ACTIVITY")
             if constraints.get("require_start_home") and sequence[0] != "home":
                 raise ValueError("START_ACTIVITY_NOT_HOME")
-            if constraints.get("require_end_home") and sequence[-1] != "home":
-                raise ValueError("END_ACTIVITY_NOT_HOME")
             # Coverage rules: a home outside Seoul is infeasible for a Seoul
             # resident; any other activity outside the Seoul POI catalogue cannot
             # be grounded as a complete chain, so the person is set aside as

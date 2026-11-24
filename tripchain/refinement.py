@@ -21,7 +21,6 @@ def requires_student1_repair(environment: dict[str, Any]) -> bool:
         for token in (
             "NO_ACTIVITY",
             "START_ACTIVITY_NOT_HOME",
-            "END_ACTIVITY_NOT_HOME",
             "ACTIVITY_LOCATION_LENGTH_MISMATCH",
         )
     )

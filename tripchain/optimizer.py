@@ -187,7 +187,7 @@ def optimize_chain(
     # the day, not a choice. With this on, its predicted dwell is ignored so a
     # chain cannot overrun the day by its final stay. This holds for any final
     # activity type, as in the ground truth (a day may end away from home, e.g.
-    # at work, when activity_constraints.require_end_home is off).
+    # at work).
     final_home_residual = bool(scheduling.get("final_home_residual", False))
     ranks = _mode_ranks(record)
     bicycle_available = "bicycle" in ranks or "personal_mobility" in ranks

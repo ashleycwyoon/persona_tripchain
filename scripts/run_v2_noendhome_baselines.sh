@@ -25,7 +25,6 @@ GT=$DATA_V2/validation/ground_truth_tripmode.jsonl
 STATE="$OUT/state"; LOGS="$OUT/logs"; LOCK="$V2/.rollout.lock"
 mkdir -p "$STATE" "$LOGS" "$OUT/analysis"
 export INFERENCE_CPU_THREADS="${INFERENCE_CPU_THREADS:-4}" PYTHONUNBUFFERED=1
-grep -q "^  require_end_home: false" "$CFG" || { echo "require_end_home is not off in $CFG"; exit 2; }
 
 step() {
   local name="$1"; shift

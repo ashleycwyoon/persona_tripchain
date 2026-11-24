@@ -65,9 +65,8 @@ scheduling:
 
 activity_constraints:
   require_start_home: true
-  # Off: 3.7% of ground-truth days end away from home (e.g. at work);
+  # A day may end away from home (3.7% of ground-truth days do, e.g. at work);
   # the final stay of any type runs to the end of the day (final_home_residual).
-  require_end_home: false
 
 optimization:
   max_states_per_signature: 48

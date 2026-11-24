@@ -31,7 +31,6 @@ STATE="$OUT/state"; LOGS="$OUT/logs"; LOCK="$V2/.rollout.lock"
 PRE="$OUT/pre_rl_validation"; D="$OUT/post_rl_validation"
 rm -f "$STATE/FAILED"; mkdir -p "$STATE" "$LOGS" "$UPD" "$OUT/grpo/student1" "$OUT/grpo/student2" "$OUT/analysis" "$PRE" "$D" "$V2/s1_multiseed"
 export INFERENCE_CPU_THREADS="${INFERENCE_CPU_THREADS:-4}" PYTHONUNBUFFERED=1
-for f in "$CFG" "$TRAIN_CFG"; do grep -q "^  require_end_home: false" "$f" || { echo "require_end_home not off: $f"; exit 2; }; done
 grep -q "processed_v2ctx/train/demographics" "$TRAIN_CFG" || { echo "train config not on v2ctx"; exit 2; }
 grep -q "processed_v2ctx/validation/demographics" "$CFG" || { echo "validation config not on v2ctx"; exit 2; }
 grep -q "^    sequence: 1.64$" "$TRAIN_CFG" || { echo "train config not SeqBoost weights"; exit 2; }
