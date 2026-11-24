@@ -1,0 +1,910 @@
+{
+ "test": {
+  "Ground Truth": {
+   "n": 5307,
+   "count_share": {
+    "1": 0.1761824006029772,
+    "2": 0.0371207838703599,
+    "3": 0.4107782174486527,
+    "4": 0.14264179385716977,
+    "5": 0.2332768042208404
+   },
+   "mean_acts": 3.411720369323535,
+   "unique_patterns": 769,
+   "hwh": 0.24175617109478048,
+   "home_only": 0.1761824006029772,
+   "top": {
+    "home-work-home": 0.24175617109478048,
+    "home": 0.1761824006029772,
+    "home-school-home": 0.0640663274919917,
+    "home-leisure-home": 0.03241002449594875,
+    "home-work-eat_out-work-home": 0.02185792349726776,
+    "home-shopping-home": 0.019973619747503297,
+    "home-work": 0.019031467872621066,
+    "home-work-eat_out-home": 0.017524024872809497,
+    "home-school-school-home": 0.016016581872997926,
+    "home-school-home-school-home": 0.01488599962313925,
+    "home-work-shopping-home": 0.014697569248162803,
+    "home-medical-home": 0.013190126248351234
+   },
+   "dep_7_9": 0.4487648673376029,
+   "work_dep_sd_h": 2.5370910129675694,
+   "school_dep_sd_h": 2.9306569293360405,
+   "mode_share": {
+    "walk": 0.35112118134229237,
+    "car_driver": 0.22157981092272833,
+    "subway": 0.18048285022267366,
+    "bus": 0.10391436831002422,
+    "car_passenger": 0.06336432533791703,
+    "bicycle": 0.021876709117899837,
+    "taxi": 0.017735760606297366,
+    "other_bus": 0.01570435190249238,
+    "truck": 0.008281897023204938,
+    "motorcycle": 0.0049222595515274635,
+    "intercity_bus": 0.003359637471677475,
+    "personal_mobility": 0.00265645753574498,
+    "other": 0.0025783264317524807,
+    "high_speed_rail": 0.0017188842878349871,
+    "air": 0.00031252441596999766,
+    "rail": 0.00023439331197749826,
+    "mobility_aid": 0.00015626220798499883
+   }
+  },
+  "Pre-RL": {
+   "n": 5307,
+   "count_share": {
+    "1": 0.18692293197663462,
+    "2": 0.0011305822498586771,
+    "3": 0.560391935179951,
+    "4": 0.1215375918598078,
+    "5": 0.13001695873374788
+   },
+   "mean_acts": 3.06255888449218,
+   "unique_patterns": 310,
+   "hwh": 0.36235161107970604,
+   "home_only": 0.1867345016016582,
+   "top": {
+    "home-work-home": 0.36235161107970604,
+    "home": 0.1867345016016582,
+    "home-school-home": 0.09044657998869418,
+    "home-leisure-home": 0.053891087243263615,
+    "home-work-eat_out-work-home": 0.02148106274731487,
+    "home-shopping-home": 0.017524024872809497,
+    "home-school-school-home": 0.01639344262295082,
+    "home-work-eat_out-home": 0.014697569248162803,
+    "home-work-shopping-home": 0.013566986998304126,
+    "home-school-home-school-home": 0.013190126248351234,
+    "home-eat_out-home": 0.012813265498398342,
+    "home-other-home": 0.012247974373469004
+   },
+   "dep_7_9": 0.6516801853997682,
+   "work_dep_sd_h": 1.3596295766991746,
+   "school_dep_sd_h": 1.7782841668438363,
+   "mode_share": {
+    "walk": 0.40169925086789693,
+    "subway": 0.22227297642974603,
+    "car_driver": 0.21194957061940434,
+    "bus": 0.12196236067970034,
+    "car_passenger": 0.030696144710396493,
+    "bicycle": 0.004385163530056642,
+    "other_bus": 0.0025580120591997078,
+    "taxi": 0.0016444363237712407,
+    "motorcycle": 0.001553078750228394,
+    "truck": 0.0010049333089713138,
+    "high_speed_rail": 0.0002740727206285401
+   }
+  },
+  "Round 1": {
+   "n": 5307,
+   "count_share": {
+    "1": 0.1937064254757867,
+    "2": 0.0001884303749764462,
+    "3": 0.5598266440550217,
+    "4": 0.11079706048615037,
+    "5": 0.13548143960806483
+   },
+   "mean_acts": 3.055398530243075,
+   "unique_patterns": 364,
+   "hwh": 0.3866591294516676,
+   "home_only": 0.1937064254757867,
+   "top": {
+    "home-work-home": 0.3866591294516676,
+    "home": 0.1937064254757867,
+    "home-school-home": 0.09572263048803467,
+    "home-leisure-home": 0.030714151121160733,
+    "home-shopping-home": 0.020162050122479742,
+    "home-work-eat_out-work-home": 0.019031467872621066,
+    "home-work-shopping-home": 0.015639721123045035,
+    "home-work-eat_out-home": 0.013378556623327681,
+    "home-school-school-home": 0.013001695873374788,
+    "home-school-home-school-home": 0.011871113623516111,
+    "home-work-work-home": 0.010175240248728096,
+    "home-eat_out-home": 0.009986809873751648
+   },
+   "dep_7_9": 0.622107969151671,
+   "work_dep_sd_h": 1.413012969269933,
+   "school_dep_sd_h": 1.8748341829003174,
+   "mode_share": {
+    "walk": 0.392005867253392,
+    "car_driver": 0.22313898056472314,
+    "subway": 0.1818848551521819,
+    "bus": 0.13348001466813347,
+    "car_passenger": 0.04757975797579758,
+    "bicycle": 0.00825082508250825,
+    "other_bus": 0.006784011734506784,
+    "taxi": 0.004308764209754309,
+    "motorcycle": 0.0011001100110011,
+    "truck": 0.0007334066740007334,
+    "other": 0.00055005500550055,
+    "intercity_bus": 0.00018335166850018335
+   }
+  },
+  "mode_acc_by_gt": {
+   "Pre-RL": {
+    "walk": {
+     "n": 1855,
+     "acc": 0.5380053908355795,
+     "to": {
+      "walk": 998,
+      "subway": 297,
+      "car_driver": 242,
+      "bus": 196
+     }
+    },
+    "car_driver": {
+     "n": 1491,
+     "acc": 0.4339369550637156,
+     "to": {
+      "car_driver": 647,
+      "subway": 399,
+      "walk": 245,
+      "bus": 164
+     }
+    },
+    "bicycle": {
+     "n": 145,
+     "acc": 0.006896551724137931,
+     "to": {
+      "walk": 57,
+      "car_driver": 33,
+      "subway": 25,
+      "bus": 24
+     }
+    },
+    "subway": {
+     "n": 1553,
+     "acc": 0.37669027688345136,
+     "to": {
+      "subway": 585,
+      "car_driver": 358,
+      "walk": 331,
+      "bus": 254
+     }
+    },
+    "bus": {
+     "n": 819,
+     "acc": 0.15262515262515264,
+     "to": {
+      "subway": 272,
+      "walk": 257,
+      "car_driver": 145,
+      "bus": 125
+     }
+    },
+    "taxi": {
+     "n": 107,
+     "acc": 0.0,
+     "to": {
+      "subway": 37,
+      "walk": 28,
+      "car_driver": 25,
+      "bus": 17
+     }
+    },
+    "car_passenger": {
+     "n": 382,
+     "acc": 0.06282722513089005,
+     "to": {
+      "walk": 221,
+      "subway": 57,
+      "car_driver": 45,
+      "bus": 32
+     }
+    },
+    "truck": {
+     "n": 31,
+     "acc": 0.0,
+     "to": {
+      "walk": 12,
+      "car_driver": 9,
+      "subway": 6,
+      "bus": 2
+     }
+    },
+    "other_bus": {
+     "n": 122,
+     "acc": 0.0,
+     "to": {
+      "walk": 67,
+      "subway": 20,
+      "car_driver": 13,
+      "bus": 11
+     }
+    },
+    "personal_mobility": {
+     "n": 17,
+     "acc": 0.0,
+     "to": {
+      "walk": 9,
+      "bus": 3,
+      "subway": 2,
+      "car_passenger": 2
+     }
+    },
+    "motorcycle": {
+     "n": 40,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 16,
+      "subway": 10,
+      "bus": 6,
+      "walk": 6
+     }
+    },
+    "high_speed_rail": {
+     "n": 14,
+     "acc": 0.0,
+     "to": {
+      "subway": 9,
+      "walk": 4,
+      "car_driver": 1
+     }
+    },
+    "intercity_bus": {
+     "n": 19,
+     "acc": 0.0,
+     "to": {
+      "subway": 8,
+      "walk": 4,
+      "car_driver": 4,
+      "bus": 3
+     }
+    },
+    "other": {
+     "n": 16,
+     "acc": 0.0,
+     "to": {
+      "walk": 8,
+      "bus": 4,
+      "car_driver": 2,
+      "subway": 2
+     }
+    },
+    "air": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 1
+     }
+    },
+    "rail": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "bus": 1
+     }
+    }
+   },
+   "Round 1": {
+    "walk": {
+     "n": 1823,
+     "acc": 0.5024684585847504,
+     "to": {
+      "walk": 916,
+      "subway": 261,
+      "car_driver": 237,
+      "bus": 217
+     }
+    },
+    "car_driver": {
+     "n": 1490,
+     "acc": 0.46442953020134226,
+     "to": {
+      "car_driver": 692,
+      "subway": 305,
+      "walk": 241,
+      "bus": 185
+     }
+    },
+    "bicycle": {
+     "n": 145,
+     "acc": 0.013793103448275862,
+     "to": {
+      "walk": 50,
+      "car_driver": 31,
+      "subway": 28,
+      "bus": 22
+     }
+    },
+    "subway": {
+     "n": 1552,
+     "acc": 0.3118556701030928,
+     "to": {
+      "subway": 484,
+      "walk": 368,
+      "car_driver": 365,
+      "bus": 285
+     }
+    },
+    "bus": {
+     "n": 825,
+     "acc": 0.18303030303030304,
+     "to": {
+      "walk": 263,
+      "subway": 233,
+      "bus": 151,
+      "car_driver": 139
+     }
+    },
+    "taxi": {
+     "n": 110,
+     "acc": 0.00909090909090909,
+     "to": {
+      "subway": 32,
+      "walk": 27,
+      "car_driver": 26,
+      "bus": 19
+     }
+    },
+    "car_passenger": {
+     "n": 387,
+     "acc": 0.082687338501292,
+     "to": {
+      "walk": 207,
+      "car_driver": 58,
+      "subway": 53,
+      "car_passenger": 32
+     }
+    },
+    "truck": {
+     "n": 29,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 12,
+      "walk": 10,
+      "subway": 6,
+      "taxi": 1
+     }
+    },
+    "personal_mobility": {
+     "n": 18,
+     "acc": 0.0,
+     "to": {
+      "walk": 9,
+      "car_driver": 5,
+      "subway": 2,
+      "bus": 1
+     }
+    },
+    "other_bus": {
+     "n": 130,
+     "acc": 0.007692307692307693,
+     "to": {
+      "walk": 68,
+      "car_passenger": 20,
+      "bus": 15,
+      "car_driver": 12
+     }
+    },
+    "high_speed_rail": {
+     "n": 13,
+     "acc": 0.0,
+     "to": {
+      "walk": 6,
+      "car_driver": 3,
+      "subway": 2,
+      "bicycle": 1
+     }
+    },
+    "intercity_bus": {
+     "n": 18,
+     "acc": 0.0,
+     "to": {
+      "walk": 8,
+      "subway": 4,
+      "car_driver": 3,
+      "bus": 2
+     }
+    },
+    "motorcycle": {
+     "n": 32,
+     "acc": 0.0,
+     "to": {
+      "walk": 11,
+      "car_driver": 11,
+      "subway": 7,
+      "bus": 3
+     }
+    },
+    "other": {
+     "n": 16,
+     "acc": 0.0,
+     "to": {
+      "walk": 8,
+      "car_driver": 4,
+      "subway": 2,
+      "other_bus": 1
+     }
+    },
+    "air": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 1
+     }
+    },
+    "rail": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "subway": 1
+     }
+    }
+   }
+  }
+ },
+ "validation": {
+  "Ground Truth": {
+   "n": 2653,
+   "count_share": {
+    "1": 0.1820580474934037,
+    "2": 0.03015454202789295,
+    "3": 0.4003015454202789,
+    "4": 0.1534112325669054,
+    "5": 0.23407463249151902
+   },
+   "mean_acts": 3.4244251790425935,
+   "unique_patterns": 476,
+   "hwh": 0.23030531473803242,
+   "home_only": 0.1820580474934037,
+   "top": {
+    "home-work-home": 0.23030531473803242,
+    "home": 0.1820580474934037,
+    "home-school-home": 0.06860158311345646,
+    "home-leisure-home": 0.028646814926498305,
+    "home-work-eat_out-work-home": 0.022615906520919715,
+    "home-shopping-home": 0.02186204297022239,
+    "home-work-shopping-home": 0.016961929890689786,
+    "home-work-eat_out-home": 0.015077271013946476,
+    "home-medical-home": 0.014323407463249152,
+    "home-school-school-home": 0.013569543912551827,
+    "home-work": 0.013192612137203167,
+    "home-work-work-home": 0.012438748586505842
+   },
+   "dep_7_9": 0.46036866359447004,
+   "work_dep_sd_h": 2.2933250803551086,
+   "school_dep_sd_h": 2.8769035849647344,
+   "mode_share": {
+    "walk": 0.3605410447761194,
+    "car_driver": 0.22574626865671643,
+    "subway": 0.1691542288557214,
+    "bus": 0.10696517412935323,
+    "car_passenger": 0.05892412935323383,
+    "bicycle": 0.021921641791044777,
+    "taxi": 0.015236318407960199,
+    "other_bus": 0.012904228855721393,
+    "truck": 0.010883084577114429,
+    "motorcycle": 0.007307213930348258,
+    "other": 0.003420398009950249,
+    "intercity_bus": 0.003109452736318408,
+    "high_speed_rail": 0.0013992537313432835,
+    "personal_mobility": 0.0012437810945273632,
+    "air": 0.0004664179104477612,
+    "rail": 0.0004664179104477612,
+    "mobility_aid": 0.0003109452736318408
+   }
+  },
+  "Pre-RL": {
+   "n": 2653,
+   "count_share": {
+    "1": 0.20128156803618544,
+    "2": 0.0007538635506973238,
+    "3": 0.5457972107048624,
+    "4": 0.1236336223143611,
+    "5": 0.1285337353938937
+   },
+   "mean_acts": 3.0173388616660386,
+   "unique_patterns": 187,
+   "hwh": 0.35544666415378817,
+   "home_only": 0.20128156803618544,
+   "top": {
+    "home-work-home": 0.35544666415378817,
+    "home": 0.20128156803618544,
+    "home-school-home": 0.09008669430833019,
+    "home-leisure-home": 0.053147380324161324,
+    "home-work-eat_out-work-home": 0.029023746701846966,
+    "home-shopping-home": 0.019223520542781758,
+    "home-school-school-home": 0.0158311345646438,
+    "home-work-eat_out-home": 0.015077271013946476,
+    "home-work-shopping-home": 0.014323407463249152,
+    "home-leisure-shopping-home": 0.012815680361854504,
+    "home-school-home-school-home": 0.010554089709762533,
+    "home-other-home": 0.00980022615906521
+   },
+   "dep_7_9": 0.653610193487494,
+   "work_dep_sd_h": 1.3697188580743005,
+   "school_dep_sd_h": 1.5640134488712383,
+   "mode_share": {
+    "walk": 0.40302690582959644,
+    "subway": 0.23449177877428998,
+    "car_driver": 0.21618086696562033,
+    "bus": 0.1078101644245142,
+    "car_passenger": 0.028026905829596414,
+    "bicycle": 0.005044843049327354,
+    "other_bus": 0.0037369207772795215,
+    "motorcycle": 0.0007473841554559044,
+    "taxi": 0.0007473841554559044,
+    "intercity_bus": 0.0001868460388639761
+   }
+  },
+  "Round 1": {
+   "n": 2653,
+   "count_share": {
+    "1": 0.21032793064455332,
+    "2": 0.0003769317753486619,
+    "3": 0.5480588013569544,
+    "4": 0.11044101017715793,
+    "5": 0.13079532604598568
+   },
+   "mean_acts": 3.017715793441387,
+   "unique_patterns": 228,
+   "hwh": 0.38522427440633245,
+   "home_only": 0.21032793064455332,
+   "top": {
+    "home-work-home": 0.38522427440633245,
+    "home": 0.21032793064455332,
+    "home-school-home": 0.09008669430833019,
+    "home-leisure-home": 0.027139087825103655,
+    "home-work-eat_out-work-home": 0.017338861666038447,
+    "home-shopping-home": 0.016961929890689786,
+    "home-work-eat_out-home": 0.014700339238597813,
+    "home-school-school-home": 0.013569543912551827,
+    "home-work-work-home": 0.013192612137203167,
+    "home-school-home-school-home": 0.01206181681115718,
+    "home-eat_out-home": 0.010931021485111195,
+    "home-work-shopping-home": 0.008292499057670561
+   },
+   "dep_7_9": 0.6224343675417661,
+   "work_dep_sd_h": 1.3803094010462191,
+   "school_dep_sd_h": 2.013212095466228,
+   "mode_share": {
+    "walk": 0.3829628245843452,
+    "car_driver": 0.23108537268821222,
+    "subway": 0.1817672333271063,
+    "bus": 0.13263590509994397,
+    "car_passenger": 0.047823650289557255,
+    "other_bus": 0.0076592564916869044,
+    "bicycle": 0.006538389688025406,
+    "taxi": 0.00616476742013824,
+    "motorcycle": 0.0020549224733794136,
+    "truck": 0.0007472445357743321,
+    "other": 0.0005604334018307491
+   }
+  },
+  "mode_acc_by_gt": {
+   "Pre-RL": {
+    "bicycle": {
+     "n": 65,
+     "acc": 0.0,
+     "to": {
+      "walk": 25,
+      "subway": 14,
+      "bus": 13,
+      "car_driver": 9
+     }
+    },
+    "bus": {
+     "n": 426,
+     "acc": 0.11737089201877934,
+     "to": {
+      "subway": 138,
+      "walk": 136,
+      "car_driver": 96,
+      "bus": 50
+     }
+    },
+    "car_driver": {
+     "n": 735,
+     "acc": 0.41768707482993195,
+     "to": {
+      "car_driver": 307,
+      "subway": 202,
+      "walk": 146,
+      "bus": 66
+     }
+    },
+    "subway": {
+     "n": 707,
+     "acc": 0.3734087694483734,
+     "to": {
+      "subway": 264,
+      "car_driver": 171,
+      "walk": 143,
+      "bus": 108
+     }
+    },
+    "walk": {
+     "n": 954,
+     "acc": 0.5241090146750524,
+     "to": {
+      "walk": 500,
+      "subway": 194,
+      "car_driver": 109,
+      "bus": 103
+     }
+    },
+    "taxi": {
+     "n": 49,
+     "acc": 0.0,
+     "to": {
+      "subway": 15,
+      "car_driver": 13,
+      "walk": 12,
+      "bus": 8
+     }
+    },
+    "car_passenger": {
+     "n": 176,
+     "acc": 0.08522727272727272,
+     "to": {
+      "walk": 81,
+      "subway": 30,
+      "bus": 24,
+      "car_driver": 24
+     }
+    },
+    "other_bus": {
+     "n": 49,
+     "acc": 0.02040816326530612,
+     "to": {
+      "walk": 19,
+      "subway": 8,
+      "bus": 7,
+      "car_driver": 7
+     }
+    },
+    "truck": {
+     "n": 27,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 10,
+      "bus": 8,
+      "walk": 7,
+      "subway": 2
+     }
+    },
+    "intercity_bus": {
+     "n": 11,
+     "acc": 0.0,
+     "to": {
+      "subway": 6,
+      "car_driver": 2,
+      "walk": 2,
+      "bus": 1
+     }
+    },
+    "personal_mobility": {
+     "n": 5,
+     "acc": 0.0,
+     "to": {
+      "subway": 2,
+      "car_driver": 1,
+      "bus": 1,
+      "walk": 1
+     }
+    },
+    "other": {
+     "n": 11,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 4,
+      "subway": 2,
+      "bus": 2,
+      "walk": 1
+     }
+    },
+    "motorcycle": {
+     "n": 25,
+     "acc": 0.08,
+     "to": {
+      "car_driver": 12,
+      "subway": 5,
+      "walk": 2,
+      "bicycle": 2
+     }
+    },
+    "high_speed_rail": {
+     "n": 5,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 4,
+      "subway": 1
+     }
+    },
+    "mobility_aid": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "walk": 1
+     }
+    },
+    "rail": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "subway": 1
+     }
+    }
+   },
+   "Round 1": {
+    "bicycle": {
+     "n": 76,
+     "acc": 0.0,
+     "to": {
+      "walk": 34,
+      "car_driver": 16,
+      "bus": 11,
+      "subway": 10
+     }
+    },
+    "bus": {
+     "n": 435,
+     "acc": 0.14942528735632185,
+     "to": {
+      "walk": 138,
+      "subway": 129,
+      "car_driver": 81,
+      "bus": 65
+     }
+    },
+    "subway": {
+     "n": 724,
+     "acc": 0.31215469613259667,
+     "to": {
+      "subway": 226,
+      "car_driver": 183,
+      "walk": 167,
+      "bus": 120
+     }
+    },
+    "car_driver": {
+     "n": 726,
+     "acc": 0.4256198347107438,
+     "to": {
+      "car_driver": 309,
+      "subway": 154,
+      "walk": 146,
+      "bus": 83
+     }
+    },
+    "walk": {
+     "n": 949,
+     "acc": 0.4488935721812434,
+     "to": {
+      "walk": 426,
+      "car_driver": 146,
+      "bus": 143,
+      "subway": 136
+     }
+    },
+    "taxi": {
+     "n": 47,
+     "acc": 0.0,
+     "to": {
+      "bus": 12,
+      "subway": 12,
+      "car_driver": 10,
+      "walk": 7
+     }
+    },
+    "car_passenger": {
+     "n": 166,
+     "acc": 0.09036144578313253,
+     "to": {
+      "walk": 93,
+      "car_driver": 26,
+      "subway": 19,
+      "car_passenger": 15
+     }
+    },
+    "other_bus": {
+     "n": 56,
+     "acc": 0.03571428571428571,
+     "to": {
+      "walk": 27,
+      "car_passenger": 7,
+      "subway": 7,
+      "car_driver": 7
+     }
+    },
+    "personal_mobility": {
+     "n": 5,
+     "acc": 0.0,
+     "to": {
+      "subway": 3,
+      "car_driver": 2
+     }
+    },
+    "truck": {
+     "n": 28,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 9,
+      "walk": 9,
+      "subway": 8,
+      "bus": 2
+     }
+    },
+    "motorcycle": {
+     "n": 28,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 17,
+      "walk": 6,
+      "subway": 3,
+      "other_bus": 1
+     }
+    },
+    "intercity_bus": {
+     "n": 10,
+     "acc": 0.0,
+     "to": {
+      "walk": 4,
+      "car_driver": 4,
+      "subway": 2
+     }
+    },
+    "other": {
+     "n": 8,
+     "acc": 0.0,
+     "to": {
+      "bus": 3,
+      "car_driver": 2,
+      "subway": 2,
+      "car_passenger": 1
+     }
+    },
+    "air": {
+     "n": 2,
+     "acc": 0.0,
+     "to": {
+      "car_driver": 2
+     }
+    },
+    "mobility_aid": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "bus": 1
+     }
+    },
+    "high_speed_rail": {
+     "n": 5,
+     "acc": 0.0,
+     "to": {
+      "subway": 3,
+      "bus": 1,
+      "walk": 1
+     }
+    },
+    "rail": {
+     "n": 1,
+     "acc": 0.0,
+     "to": {
+      "walk": 1
+     }
+    }
+   }
+  }
+ }
+}

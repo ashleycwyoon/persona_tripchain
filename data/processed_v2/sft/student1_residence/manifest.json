@@ -1,0 +1,14 @@
+{
+  "schema": "v2 ground truth (scripts/rebuild_ground_truth_v2.py)",
+  "target_key_order": [
+    "persona_bundle",
+    "reasoning1",
+    "activity_sequence"
+  ],
+  "split": "processed_v2 train / validation",
+  "teacher": "v1 shards + relabel ${OUTPUT_HOME}/tripchain_1030/teacher_relabel_v2/teacher_v2",
+  "counts": {
+    "student1_residence/train": 18574,
+    "student1_residence/validation": 2653
+  }
+}

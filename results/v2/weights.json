@@ -1,0 +1,29 @@
+{
+  "people": 18574,
+  "rollouts": 73997,
+  "s1_groups_values": 36876,
+  "s2_groups_values": 73964,
+  "spread": {
+    "s1_individual": 0.551011501434227,
+    "s1_sequence": 0.6699823178910782,
+    "s2_individual": 0.21771488807333858,
+    "s2_trip_mode": 0.14834310639736045,
+    "s2_first_departure": 0.36046109033742557,
+    "s2_corr_mode_departure": 0.0062064436337818055,
+    "s2_corr_individual_mode": -0.0024228697591719634,
+    "s2_corr_individual_departure": -0.030122746219092635,
+    "s1_corr_individual_sequence": -0.1384683864945368
+  },
+  "weights": {
+    "sequence": 0.8224269308608935,
+    "trip_mode": 1.03778111070126,
+    "first_departure": 0.42708541323508276
+  },
+  "distribution_summary": {
+    "distribution_truth_people": 18574,
+    "distribution_branches": 37012,
+    "distribution_sequence_mean": -0.25262659985270464,
+    "distribution_trip_mode_mean": -0.08688950564268554,
+    "distribution_first_departure_mean": -0.1473889769751503
+  }
+}

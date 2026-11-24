@@ -1,0 +1,324 @@
+{
+  "people": {
+    "Ground Truth": 2653,
+    "Pre-RL": 2653,
+    "SeqBoost": 2653,
+    "Round 2 (seq)": 2653,
+    "Round 2 (bal)": 2653,
+    "Teacher": 2653
+  },
+  "jsd_vs_gt": {
+    "24h_activity_profile": {
+      "Ground Truth": 0.0,
+      "Pre-RL": 0.015247930112361304,
+      "SeqBoost": 0.014150181792718248,
+      "Round 2 (seq)": 0.012334971098405862,
+      "Round 2 (bal)": 0.015503773461137283
+    },
+    "mode_selected_legs": {
+      "Pre-RL": 0.02479933884810529,
+      "SeqBoost": 0.018178188836823535,
+      "Round 2 (seq)": 0.012921261200515203,
+      "Round 2 (bal)": 0.011890997200522495
+    },
+    "mode_policy_output": {
+      "Pre-RL": 0.021497687881319557,
+      "SeqBoost": 0.00883534884422762,
+      "Round 2 (seq)": 0.0036707932143583743,
+      "Round 2 (bal)": 0.0036750090207413122
+    },
+    "mode_top1": {
+      "Pre-RL": 0.019969401469369878,
+      "SeqBoost": 0.008829702849465146,
+      "Round 2 (seq)": 0.003132193860214681,
+      "Round 2 (bal)": 0.003892974434761276
+    },
+    "activity_count": {
+      "Pre-RL": 0.03130850300587042,
+      "SeqBoost": 0.018733253774610985,
+      "Round 2 (seq)": 0.011741101337924081,
+      "Round 2 (bal)": 0.01570398657242919
+    },
+    "non_home_activity_types": {
+      "Pre-RL": 0.013273533891936595,
+      "SeqBoost": 0.00837672341085259,
+      "Round 2 (seq)": 0.00609339467231362,
+      "Round 2 (bal)": 0.009980355111619824
+    },
+    "activity_sequence_patterns": {
+      "Pre-RL": 0.14401184308554554,
+      "SeqBoost": 0.13894122262798797,
+      "Round 2 (seq)": 0.13956697398842013,
+      "Round 2 (bal)": 0.1411622978928435
+    },
+    "dwell_home": {
+      "Pre-RL": 0.023010972118109152,
+      "SeqBoost": 0.017055835267996682,
+      "Round 2 (seq)": 0.012236993480219352,
+      "Round 2 (bal)": 0.01477511209715096
+    },
+    "dwell_work": {
+      "Pre-RL": 0.08848783135478276,
+      "SeqBoost": 0.07304221657793744,
+      "Round 2 (seq)": 0.04894177414008047,
+      "Round 2 (bal)": 0.0642759488912109
+    },
+    "dwell_school": {
+      "Pre-RL": 0.0747460817920562,
+      "SeqBoost": 0.0700051349502688,
+      "Round 2 (seq)": 0.06025541250328771,
+      "Round 2 (bal)": 0.07388507948891472
+    },
+    "dwell_shopping": {
+      "Pre-RL": 0.02919750714512412,
+      "SeqBoost": 0.034522597910253736,
+      "Round 2 (seq)": 0.02629516874741367,
+      "Round 2 (bal)": 0.033355235510140344
+    },
+    "dwell_eat_out": {
+      "Pre-RL": 0.057666649733876016,
+      "SeqBoost": 0.027152200274550096,
+      "Round 2 (seq)": 0.032075862842273914,
+      "Round 2 (bal)": 0.04371616857258874
+    },
+    "dwell_leisure": {
+      "Pre-RL": 0.04715049316393784,
+      "SeqBoost": 0.04454915663645369,
+      "Round 2 (seq)": 0.034021317298721335,
+      "Round 2 (bal)": 0.033320087064415076
+    },
+    "dwell_escort_care": {
+      "Pre-RL": 0.05094361074631382,
+      "SeqBoost": 0.09111364383914614,
+      "Round 2 (seq)": 0.0819423485351119,
+      "Round 2 (bal)": 0.07225724145305683
+    },
+    "dwell_other": {
+      "Pre-RL": 0.14910671432875428,
+      "SeqBoost": 0.1647680718968043,
+      "Round 2 (seq)": 0.16460904537705773,
+      "Round 2 (bal)": 0.12525074702459638
+    },
+    "first_departure_from_home": {
+      "Pre-RL": 0.043872741353604944,
+      "SeqBoost": 0.03541026107396378,
+      "Round 2 (seq)": 0.02176395184289117,
+      "Round 2 (bal)": 0.025855145381964185
+    },
+    "final_arrival_at_home": {
+      "Pre-RL": 0.0643816476836391,
+      "SeqBoost": 0.05837306831736425,
+      "Round 2 (seq)": 0.05587282673291512,
+      "Round 2 (bal)": 0.06712930152335266
+    },
+    "non_home_location_scope": {
+      "Pre-RL": 0.00899594363461892,
+      "SeqBoost": 0.006052972401040507,
+      "Round 2 (seq)": 0.003634377095109164,
+      "Round 2 (bal)": 0.0041029549880111805
+    }
+  },
+  "sequence_pattern_stats": {
+    "Ground Truth": {
+      "unique_patterns": 476,
+      "share_of_people_with_pattern_seen_in_gt": 1.0
+    },
+    "Pre-RL": {
+      "unique_patterns": 197,
+      "share_of_people_with_pattern_seen_in_gt": 0.9566528458349038
+    },
+    "SeqBoost": {
+      "unique_patterns": 270,
+      "share_of_people_with_pattern_seen_in_gt": 0.9381831888428195
+    },
+    "Round 2 (seq)": {
+      "unique_patterns": 312,
+      "share_of_people_with_pattern_seen_in_gt": 0.9257444402563136
+    },
+    "Round 2 (bal)": {
+      "unique_patterns": 288,
+      "share_of_people_with_pattern_seen_in_gt": 0.9325292122125896
+    }
+  },
+  "text_cosine": {
+    "persona~reasoning1": {
+      "Teacher": {
+        "mean": 0.7061953544616699,
+        "median": 0.707654595375061,
+        "shuffled_person_mean": 0.5478150248527527
+      },
+      "Pre-RL": {
+        "mean": 0.7140428423881531,
+        "median": 0.7197229862213135,
+        "shuffled_person_mean": 0.5622900724411011
+      },
+      "SeqBoost": {
+        "mean": 0.7113566398620605,
+        "median": 0.7127567529678345,
+        "shuffled_person_mean": 0.5582151412963867
+      },
+      "Round 2 (seq)": {
+        "mean": 0.7098114490509033,
+        "median": 0.7094991207122803,
+        "shuffled_person_mean": 0.5579193830490112
+      },
+      "Round 2 (bal)": {
+        "mean": 0.7111539244651794,
+        "median": 0.7139438390731812,
+        "shuffled_person_mean": 0.5602284073829651
+      }
+    },
+    "reasoning1~reasoning2": {
+      "Teacher": {
+        "mean": 0.5673694610595703,
+        "median": 0.5590522885322571,
+        "shuffled_person_mean": 0.46044811606407166
+      },
+      "Pre-RL": {
+        "mean": 0.5674711465835571,
+        "median": 0.5543074011802673,
+        "shuffled_person_mean": 0.4676676094532013
+      },
+      "SeqBoost": {
+        "mean": 0.5666256546974182,
+        "median": 0.5535053014755249,
+        "shuffled_person_mean": 0.46918436884880066
+      },
+      "Round 2 (seq)": {
+        "mean": 0.5698962807655334,
+        "median": 0.5609712600708008,
+        "shuffled_person_mean": 0.46805134415626526
+      },
+      "Round 2 (bal)": {
+        "mean": 0.5718399882316589,
+        "median": 0.561134934425354,
+        "shuffled_person_mean": 0.47046345472335815
+      }
+    },
+    "persona~reasoning2": {
+      "Teacher": {
+        "mean": 0.6246529817581177,
+        "median": 0.633293628692627,
+        "shuffled_person_mean": 0.4861932098865509
+      },
+      "Pre-RL": {
+        "mean": 0.6128271818161011,
+        "median": 0.6161818504333496,
+        "shuffled_person_mean": 0.4800610840320587
+      },
+      "SeqBoost": {
+        "mean": 0.6200180053710938,
+        "median": 0.6242053508758545,
+        "shuffled_person_mean": 0.48103129863739014
+      },
+      "Round 2 (seq)": {
+        "mean": 0.618219792842865,
+        "median": 0.6207811236381531,
+        "shuffled_person_mean": 0.4826623201370239
+      },
+      "Round 2 (bal)": {
+        "mean": 0.6178562641143799,
+        "median": 0.6205503940582275,
+        "shuffled_person_mean": 0.47867169976234436
+      }
+    }
+  },
+  "text_sentiment": {
+    "persona": {
+      "Teacher": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9483603467772334,
+        "share_positive": 0.05163965322276668,
+        "mean_score_pos_minus_neg": 0.19221936166286469
+      },
+      "Pre-RL": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9585375047116472,
+        "share_positive": 0.04146249528835281,
+        "mean_score_pos_minus_neg": 0.19451962411403656
+      },
+      "SeqBoost": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9589144364869958,
+        "share_positive": 0.041085563513004145,
+        "mean_score_pos_minus_neg": 0.18855620920658112
+      },
+      "Round 2 (seq)": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9558989822842066,
+        "share_positive": 0.044101017715793445,
+        "mean_score_pos_minus_neg": 0.19047413766384125
+      },
+      "Round 2 (bal)": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9585375047116472,
+        "share_positive": 0.04146249528835281,
+        "mean_score_pos_minus_neg": 0.19016097486019135
+      }
+    },
+    "reasoning1": {
+      "Teacher": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.8891820580474934,
+        "share_positive": 0.11044101017715793,
+        "mean_score_pos_minus_neg": 0.21767787635326385
+      },
+      "Pre-RL": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9042593290614399,
+        "share_positive": 0.09536373916321146,
+        "mean_score_pos_minus_neg": 0.20811134576797485
+      },
+      "SeqBoost": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9170750094232943,
+        "share_positive": 0.08254805880135696,
+        "mean_score_pos_minus_neg": 0.20235086977481842
+      },
+      "Round 2 (seq)": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9095363739163211,
+        "share_positive": 0.09008669430833019,
+        "mean_score_pos_minus_neg": 0.20577295124530792
+      },
+      "Round 2 (bal)": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9189596683000377,
+        "share_positive": 0.08066339992461365,
+        "mean_score_pos_minus_neg": 0.19724413752555847
+      }
+    },
+    "reasoning2": {
+      "Teacher": {
+        "share_negative": 0.003769317753486619,
+        "share_neutral": 0.8982284206558613,
+        "share_positive": 0.09800226159065209,
+        "mean_score_pos_minus_neg": 0.2163994461297989
+      },
+      "Pre-RL": {
+        "share_negative": 0.0007538635506973238,
+        "share_neutral": 0.9050131926121372,
+        "share_positive": 0.09423294383716548,
+        "mean_score_pos_minus_neg": 0.2145351767539978
+      },
+      "SeqBoost": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9166980776479458,
+        "share_positive": 0.08292499057670562,
+        "mean_score_pos_minus_neg": 0.20253542065620422
+      },
+      "Round 2 (seq)": {
+        "share_negative": 0.0018846588767433095,
+        "share_neutral": 0.9189596683000377,
+        "share_positive": 0.079155672823219,
+        "mean_score_pos_minus_neg": 0.20231297612190247
+      },
+      "Round 2 (bal)": {
+        "share_negative": 0.0011307953260459858,
+        "share_neutral": 0.9125518281191104,
+        "share_positive": 0.08631737655484358,
+        "mean_score_pos_minus_neg": 0.20161722600460052
+      }
+    }
+  }
+}

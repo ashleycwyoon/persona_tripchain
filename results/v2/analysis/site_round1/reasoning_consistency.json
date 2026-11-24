@@ -1,0 +1,357 @@
+{
+  "dwell_median_train_gt": {
+    "home": 430,
+    "school": 265.0,
+    "work": 415.0,
+    "leisure": 90,
+    "shopping": 25,
+    "eat_out": 60,
+    "other": 95.0,
+    "escort_care": 10.0,
+    "medical": 55
+  },
+  "populations": {
+    "Teacher (SFT validation)": {
+      "people": 2653,
+      "same_person": {
+        "activity_precision": {
+          "rate": 0.8033405172413793,
+          "supported": 2982,
+          "claims": 3712
+        },
+        "activity_recall": {
+          "rate": 0.9585342333654774,
+          "supported": 2982,
+          "claims": 3111
+        },
+        "mode_precision": {
+          "rate": 0.815196394075982,
+          "supported": 2532,
+          "claims": 3106
+        },
+        "mode_recall": {
+          "rate": 0.8248862897985705,
+          "supported": 2539,
+          "claims": 3078
+        },
+        "place_precision": {
+          "rate": 0.9992486851990984,
+          "supported": 1330,
+          "claims": 1331
+        },
+        "dwell_precision": {
+          "rate": 0.7925430210325047,
+          "supported": 829,
+          "claims": 1046
+        },
+        "timeofday_precision": {
+          "rate": 0.5669642857142857,
+          "supported": 127,
+          "claims": 224
+        }
+      },
+      "shuffled_same_occupation": {
+        "activity_precision": {
+          "rate": 0.4480064655172414,
+          "supported": 1663,
+          "claims": 3712
+        },
+        "activity_recall": {
+          "rate": 0.5345548055287689,
+          "supported": 1663,
+          "claims": 3111
+        },
+        "mode_precision": {
+          "rate": 0.3042498390212492,
+          "supported": 945,
+          "claims": 3106
+        },
+        "mode_recall": {
+          "rate": 0.3076673164392463,
+          "supported": 947,
+          "claims": 3078
+        },
+        "place_precision": {
+          "rate": 0.020311630495269895,
+          "supported": 73,
+          "claims": 3594
+        },
+        "dwell_precision": {
+          "rate": 0.6564516129032258,
+          "supported": 407,
+          "claims": 620
+        },
+        "timeofday_precision": {
+          "rate": 0.42857142857142855,
+          "supported": 96,
+          "claims": 224
+        }
+      },
+      "shuffled_random": {
+        "activity_precision": {
+          "rate": 0.2807112068965517,
+          "supported": 1042,
+          "claims": 3712
+        },
+        "activity_recall": {
+          "rate": 0.33494053359048537,
+          "supported": 1042,
+          "claims": 3111
+        },
+        "mode_precision": {
+          "rate": 0.27978106889890536,
+          "supported": 869,
+          "claims": 3106
+        },
+        "mode_recall": {
+          "rate": 0.2826510721247563,
+          "supported": 870,
+          "claims": 3078
+        },
+        "place_precision": {
+          "rate": 0.015763274336283186,
+          "supported": 57,
+          "claims": 3616
+        },
+        "dwell_precision": {
+          "rate": 0.6021798365122616,
+          "supported": 221,
+          "claims": 367
+        },
+        "timeofday_precision": {
+          "rate": 0.4017857142857143,
+          "supported": 90,
+          "claims": 224
+        }
+      }
+    },
+    "Pre-RL": {
+      "people": 5307,
+      "same_person": {
+        "activity_precision": {
+          "rate": 0.8035049627791563,
+          "supported": 5181,
+          "claims": 6448
+        },
+        "activity_recall": {
+          "rate": 0.9651639344262295,
+          "supported": 5181,
+          "claims": 5368
+        },
+        "mode_precision": {
+          "rate": 0.7749579831932774,
+          "supported": 4611,
+          "claims": 5950
+        },
+        "mode_recall": {
+          "rate": 0.8876058506543495,
+          "supported": 4612,
+          "claims": 5196
+        },
+        "place_precision": {
+          "rate": 0.985897435897436,
+          "supported": 2307,
+          "claims": 2340
+        },
+        "dwell_precision": {
+          "rate": 0.8550596553247901,
+          "supported": 1935,
+          "claims": 2263
+        },
+        "timeofday_precision": {
+          "rate": 0.4120734908136483,
+          "supported": 157,
+          "claims": 381
+        }
+      },
+      "shuffled_same_occupation": {
+        "activity_precision": {
+          "rate": 0.5313275434243176,
+          "supported": 3426,
+          "claims": 6448
+        },
+        "activity_recall": {
+          "rate": 0.6382265275707899,
+          "supported": 3426,
+          "claims": 5368
+        },
+        "mode_precision": {
+          "rate": 0.333109243697479,
+          "supported": 1982,
+          "claims": 5950
+        },
+        "mode_recall": {
+          "rate": 0.3814472671285604,
+          "supported": 1982,
+          "claims": 5196
+        },
+        "place_precision": {
+          "rate": 0.02351274787535411,
+          "supported": 166,
+          "claims": 7060
+        },
+        "dwell_precision": {
+          "rate": 0.7729032258064517,
+          "supported": 1198,
+          "claims": 1550
+        },
+        "timeofday_precision": {
+          "rate": 0.3937007874015748,
+          "supported": 150,
+          "claims": 381
+        }
+      },
+      "shuffled_random": {
+        "activity_precision": {
+          "rate": 0.3090880893300248,
+          "supported": 1993,
+          "claims": 6448
+        },
+        "activity_recall": {
+          "rate": 0.371274217585693,
+          "supported": 1993,
+          "claims": 5368
+        },
+        "mode_precision": {
+          "rate": 0.29092436974789915,
+          "supported": 1731,
+          "claims": 5950
+        },
+        "mode_recall": {
+          "rate": 0.3331408775981524,
+          "supported": 1731,
+          "claims": 5196
+        },
+        "place_precision": {
+          "rate": 0.019768426998023156,
+          "supported": 140,
+          "claims": 7082
+        },
+        "dwell_precision": {
+          "rate": 0.7244186046511628,
+          "supported": 623,
+          "claims": 860
+        },
+        "timeofday_precision": {
+          "rate": 0.33858267716535434,
+          "supported": 129,
+          "claims": 381
+        }
+      }
+    },
+    "Round 1": {
+      "people": 5307,
+      "same_person": {
+        "activity_precision": {
+          "rate": 0.7989384951607867,
+          "supported": 5118,
+          "claims": 6406
+        },
+        "activity_recall": {
+          "rate": 0.9645684131172257,
+          "supported": 5118,
+          "claims": 5306
+        },
+        "mode_precision": {
+          "rate": 0.7846259202191406,
+          "supported": 4583,
+          "claims": 5841
+        },
+        "mode_recall": {
+          "rate": 0.8771996939556236,
+          "supported": 4586,
+          "claims": 5228
+        },
+        "place_precision": {
+          "rate": 0.9906417112299465,
+          "supported": 2223,
+          "claims": 2244
+        },
+        "dwell_precision": {
+          "rate": 0.8642455685257242,
+          "supported": 1999,
+          "claims": 2313
+        },
+        "timeofday_precision": {
+          "rate": 0.39650872817955113,
+          "supported": 159,
+          "claims": 401
+        }
+      },
+      "shuffled_same_occupation": {
+        "activity_precision": {
+          "rate": 0.5490165469871995,
+          "supported": 3517,
+          "claims": 6406
+        },
+        "activity_recall": {
+          "rate": 0.662834526950622,
+          "supported": 3517,
+          "claims": 5306
+        },
+        "mode_precision": {
+          "rate": 0.3329909262112652,
+          "supported": 1945,
+          "claims": 5841
+        },
+        "mode_recall": {
+          "rate": 0.3722264728385616,
+          "supported": 1946,
+          "claims": 5228
+        },
+        "place_precision": {
+          "rate": 0.025351296537737215,
+          "supported": 175,
+          "claims": 6903
+        },
+        "dwell_precision": {
+          "rate": 0.7593486127864898,
+          "supported": 1259,
+          "claims": 1658
+        },
+        "timeofday_precision": {
+          "rate": 0.3316708229426434,
+          "supported": 133,
+          "claims": 401
+        }
+      },
+      "shuffled_random": {
+        "activity_precision": {
+          "rate": 0.31782703715266936,
+          "supported": 2036,
+          "claims": 6406
+        },
+        "activity_recall": {
+          "rate": 0.3837165473049378,
+          "supported": 2036,
+          "claims": 5306
+        },
+        "mode_precision": {
+          "rate": 0.2778633795582948,
+          "supported": 1623,
+          "claims": 5841
+        },
+        "mode_recall": {
+          "rate": 0.31063504208110176,
+          "supported": 1624,
+          "claims": 5228
+        },
+        "place_precision": {
+          "rate": 0.020652801848642405,
+          "supported": 143,
+          "claims": 6924
+        },
+        "dwell_precision": {
+          "rate": 0.7425641025641025,
+          "supported": 724,
+          "claims": 975
+        },
+        "timeofday_precision": {
+          "rate": 0.3541147132169576,
+          "supported": 142,
+          "claims": 401
+        }
+      }
+    }
+  }
+}

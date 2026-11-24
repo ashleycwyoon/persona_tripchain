@@ -1,0 +1,393 @@
+{
+  "requested_people": 2653,
+  "student1_success_people": 2653,
+  "student2_success_people": 2653,
+  "shared_prediction_people": 2653,
+  "environment_completed_people": 2653,
+  "decision_source": "rollout_decision_trace",
+  "people_with_refined_decisions": 32,
+  "activity_sequence_exact_accuracy": 0.24387485865058425,
+  "activity_sequence_lcs_f1_mean": 0.6906826101722001,
+  "location_dong_exact_on_lcs": 0.7536380756719739,
+  "dwell_median_absolute_error_min": 125.0,
+  "dwell_within_30_min": 0.22170861153912003,
+  "mode_preference_top1_accuracy": 0.33649025069637883,
+  "trip_mode_accuracy_on_lcs": 0.35521833384948903,
+  "trip_mode_share_predicted": {
+    "walk": 0.382,
+    "car_driver": 0.2317,
+    "subway": 0.2135,
+    "bus": 0.1092,
+    "car_passenger": 0.0445,
+    "bicycle": 0.0069,
+    "other_bus": 0.0066,
+    "taxi": 0.0044,
+    "other": 0.0005,
+    "truck": 0.0004,
+    "motorcycle": 0.0004
+  },
+  "trip_mode_share_truth": {
+    "walk": 0.3605,
+    "car_driver": 0.2257,
+    "subway": 0.1692,
+    "bus": 0.107,
+    "car_passenger": 0.0589,
+    "bicycle": 0.0219,
+    "taxi": 0.0152,
+    "other_bus": 0.0129,
+    "truck": 0.0109,
+    "motorcycle": 0.0073,
+    "other": 0.0034,
+    "intercity_bus": 0.0031,
+    "high_speed_rail": 0.0014,
+    "personal_mobility": 0.0012,
+    "air": 0.0005,
+    "rail": 0.0005,
+    "mobility_aid": 0.0003
+  },
+  "trip_mode_share_jsd": 0.020429397490499178,
+  "mode_fallback_legs": 239,
+  "feasible_rate": 0.9065209197135319,
+  "outside_poi_coverage_people": 241,
+  "feasible_rate_within_poi_coverage": 0.9970978441127695,
+  "initial_plan_feasible_rate": 0.9057670561628345,
+  "mean_weighted_reward": 2.9620117671203867,
+  "reward_component_means": {
+    "activity": 0.6906826101722001,
+    "dwell": 0.2601263562924693,
+    "feasibility": 0.8700168721842297,
+    "location": 0.48363147668179707,
+    "start_time": 0.11793151818352991,
+    "trip_mode": 0.2092289950280904
+  },
+  "status_counts": {
+    "ok": 2405,
+    "outside_poi_coverage": 241,
+    "infeasible": 7
+  },
+  "selected_leg_mode_counts": {
+    "subway": 930,
+    "walk": 2146,
+    "bus": 589,
+    "car_driver": 849,
+    "bicycle": 25,
+    "taxi": 61,
+    "car_passenger": 199,
+    "motorcycle": 2
+  },
+  "selected_leg_mode_share": {
+    "walk": 0.447,
+    "subway": 0.1937,
+    "car_driver": 0.1768,
+    "bus": 0.1227,
+    "car_passenger": 0.0414,
+    "taxi": 0.0127,
+    "bicycle": 0.0052,
+    "motorcycle": 0.0004
+  },
+  "distribution": {
+    "people": 2653,
+    "top_patterns": 20,
+    "min_group_people": 30,
+    "population": {
+      "sequence_pattern": 0.02539783181978198,
+      "activity_count": 0.018733253774610988,
+      "trip_count": 0.018733253774610988,
+      "activity_type": 0.00837672341085259,
+      "mode_top1": 0.020758354450323476,
+      "trip_mode": 0.020429397490499178,
+      "dwell_time": 0.05400405093276024,
+      "first_departure_hour": 0.02420181834744436,
+      "travel_time": 0.07126280932001651
+    },
+    "subgroup": {
+      "occupation": {
+        "groups": {
+          "freelancer": {
+            "people": 69,
+            "sequence_pattern": 0.10606258736350711,
+            "activity_count": 0.027574541775199437,
+            "trip_count": 0.027574541775199437,
+            "activity_type": 0.05733691270516243,
+            "mode_top1": 0.05389830384608132,
+            "trip_mode": 0.051333930900199845,
+            "dwell_time": 0.23010726871281867,
+            "first_departure_hour": 0.37411304703383497,
+            "travel_time": 0.1812207933922071
+          },
+          "general_labor": {
+            "people": 48,
+            "sequence_pattern": 0.19287498997007385,
+            "activity_count": 0.18093854059188322,
+            "trip_count": 0.18093854059188322,
+            "activity_type": 0.11099364412954857,
+            "mode_top1": 0.05348055375388327,
+            "trip_mode": 0.039665007169515445,
+            "dwell_time": 0.4243971493470258,
+            "first_departure_hour": 0.15471118185534555,
+            "travel_time": 0.10579612902948635
+          },
+          "manager": {
+            "people": 61,
+            "sequence_pattern": 0.15257831148332202,
+            "activity_count": 0.07331550534381337,
+            "trip_count": 0.07331550534381337,
+            "activity_type": 0.023944536468847654,
+            "mode_top1": 0.009655571846997774,
+            "trip_mode": 0.02637978083594335,
+            "dwell_time": 0.1953307607491432,
+            "first_departure_hour": 0.11252139053607824,
+            "travel_time": 0.3224968099067546
+          },
+          "not_working": {
+            "people": 609,
+            "sequence_pattern": 0.03688701452109743,
+            "activity_count": 0.028975477572279192,
+            "trip_count": 0.028975477572279192,
+            "activity_type": 0.013972298575459617,
+            "mode_top1": 0.018240471403737663,
+            "trip_mode": 0.016097319428179876,
+            "travel_time": 0.07030320361229866,
+            "dwell_time": 0.08844618596060694,
+            "first_departure_hour": 0.023212529059637152
+          },
+          "office_worker": {
+            "people": 525,
+            "sequence_pattern": 0.04879009120632227,
+            "activity_count": 0.028119589111654453,
+            "trip_count": 0.028119589111654453,
+            "activity_type": 0.018557712239228235,
+            "mode_top1": 0.0368043001804374,
+            "trip_mode": 0.035615896231581436,
+            "dwell_time": 0.09999484338144321,
+            "first_departure_hour": 0.053792673200725845,
+            "travel_time": 0.06734250510215851
+          },
+          "other": {
+            "people": 151,
+            "sequence_pattern": 0.06067405906917378,
+            "activity_count": 0.03482401734270651,
+            "trip_count": 0.03482401734270651,
+            "activity_type": 0.012154830635957691,
+            "mode_top1": 0.04387698053504667,
+            "trip_mode": 0.03407718456429311,
+            "dwell_time": 0.14099296969936742,
+            "first_departure_hour": 0.07354009397364077,
+            "travel_time": 0.11246540423159385
+          },
+          "professional": {
+            "people": 77,
+            "sequence_pattern": 0.09677032518083403,
+            "activity_count": 0.05839703180213311,
+            "trip_count": 0.05839703180213311,
+            "activity_type": 0.04118870406993101,
+            "mode_top1": 0.0788638487257854,
+            "trip_mode": 0.056614293864184116,
+            "dwell_time": 0.18884620242478595,
+            "first_departure_hour": 0.06106548226057206,
+            "travel_time": 0.0972751214491191
+          },
+          "sales_service": {
+            "people": 191,
+            "sequence_pattern": 0.044387027164932744,
+            "activity_count": 0.027801157476395087,
+            "trip_count": 0.027801157476395087,
+            "activity_type": 0.009343625744979323,
+            "mode_top1": 0.036608203331577285,
+            "trip_mode": 0.031378647616916805,
+            "dwell_time": 0.15302243921762118,
+            "first_departure_hour": 0.10915438843820344,
+            "travel_time": 0.11661056752218697
+          },
+          "self_employed": {
+            "people": 177,
+            "sequence_pattern": 0.08392184080720469,
+            "activity_count": 0.028683681197131116,
+            "trip_count": 0.028683681197131116,
+            "activity_type": 0.014264170393222853,
+            "mode_top1": 0.07931342052488066,
+            "trip_mode": 0.08307707694251877,
+            "dwell_time": 0.13703400480633848,
+            "first_departure_hour": 0.05355757837468569,
+            "travel_time": 0.11284938609161796
+          },
+          "simple_labor": {
+            "people": 34,
+            "sequence_pattern": 0.20826257665424125,
+            "activity_count": 0.17168438861216448,
+            "trip_count": 0.17168438861216448,
+            "activity_type": 0.0528085951523301,
+            "mode_top1": 0.18531898644854478,
+            "trip_mode": 0.17661786379097763,
+            "dwell_time": 0.4632314283045467,
+            "first_departure_hour": 0.42013159966936536,
+            "travel_time": 0.09731214846013495
+          },
+          "skilled_trade": {
+            "people": 63,
+            "sequence_pattern": 0.07540353260262046,
+            "activity_count": 0.04193394154995446,
+            "trip_count": 0.04193394154995446,
+            "activity_type": 0.04036008399499059,
+            "mode_top1": 0.11357297939004385,
+            "trip_mode": 0.09515687860214074,
+            "dwell_time": 0.3123061718042039,
+            "first_departure_hour": 0.2630375949115821,
+            "travel_time": 0.13890765762899326
+          },
+          "student": {
+            "people": 402,
+            "sequence_pattern": 0.027370500549653815,
+            "activity_count": 0.02700473134869159,
+            "trip_count": 0.02700473134869159,
+            "activity_type": 0.020816930937738187,
+            "mode_top1": 0.03025964060561138,
+            "trip_mode": 0.031086152963315662,
+            "travel_time": 0.07642092522191765,
+            "dwell_time": 0.07887015024619957,
+            "first_departure_hour": 0.032649526027806935
+          },
+          "technician": {
+            "people": 245,
+            "sequence_pattern": 0.06402866748747456,
+            "activity_count": 0.05881417816261323,
+            "trip_count": 0.05881417816261323,
+            "activity_type": 0.029175887034896295,
+            "mode_top1": 0.032336431540869834,
+            "trip_mode": 0.03652378366279568,
+            "dwell_time": 0.16444423301327563,
+            "first_departure_hour": 0.134245810494427,
+            "travel_time": 0.0866859962090591
+          }
+        },
+        "people_weighted_mean": {
+          "activity_count": 0.03821844011383106,
+          "activity_type": 0.021933432798346055,
+          "dwell_time": 0.13245017223478567,
+          "first_departure_hour": 0.07748389035271236,
+          "mode_top1": 0.03943328479696213,
+          "sequence_pattern": 0.05747703079153241,
+          "travel_time": 0.09282153738104121,
+          "trip_count": 0.03821844011383106,
+          "trip_mode": 0.037407432986598106
+        },
+        "people_in_kept_groups": 2652
+      },
+      "age": {
+        "groups": {
+          "18-34": {
+            "people": 661,
+            "sequence_pattern": 0.04309982238300242,
+            "activity_count": 0.022141554777745518,
+            "trip_count": 0.022141554777745518,
+            "activity_type": 0.008363773237286255,
+            "mode_top1": 0.028678532024754726,
+            "trip_mode": 0.023761450037829826,
+            "dwell_time": 0.09009939862560822,
+            "first_departure_hour": 0.04781552241907201,
+            "travel_time": 0.046616037247459455
+          },
+          "35-54": {
+            "people": 1003,
+            "sequence_pattern": 0.03731846902058572,
+            "activity_count": 0.024025683687894338,
+            "trip_count": 0.024025683687894338,
+            "activity_type": 0.01630463925961497,
+            "mode_top1": 0.02496294290833939,
+            "trip_mode": 0.02374851214845749,
+            "dwell_time": 0.08402014445164036,
+            "first_departure_hour": 0.03302312768657559,
+            "travel_time": 0.08194199511236112
+          },
+          "55plus": {
+            "people": 686,
+            "sequence_pattern": 0.035956300851960124,
+            "activity_count": 0.019428670303022953,
+            "trip_count": 0.019428670303022953,
+            "activity_type": 0.017072419798132937,
+            "mode_top1": 0.02320148256224918,
+            "trip_mode": 0.030959788882721478,
+            "travel_time": 0.12681768368127022,
+            "dwell_time": 0.07349357753685465,
+            "first_departure_hour": 0.03789389376469126
+          },
+          "under18": {
+            "people": 303,
+            "sequence_pattern": 0.02253527796753152,
+            "activity_count": 0.0358609507644921,
+            "trip_count": 0.0358609507644921,
+            "activity_type": 0.026324155579409234,
+            "mode_top1": 0.030258650324130887,
+            "trip_mode": 0.030556138099772822,
+            "travel_time": 0.10728549985779123,
+            "dwell_time": 0.09733966724101893,
+            "first_departure_hour": 0.06608655037438342
+          }
+        },
+        "people_weighted_mean": {
+          "activity_count": 0.023719285471753736,
+          "activity_type": 0.01566901862394279,
+          "dwell_time": 0.0843341201435482,
+          "first_departure_hour": 0.04174432464178602,
+          "mode_top1": 0.026038043532356527,
+          "sequence_pattern": 0.03671828821387817,
+          "travel_time": 0.0876386955071734,
+          "trip_count": 0.023719285471753736,
+          "trip_mode": 0.026393894149146807
+        },
+        "people_in_kept_groups": 2653
+      },
+      "gender": {
+        "groups": {
+          "female": {
+            "people": 1351,
+            "sequence_pattern": 0.01810262330155898,
+            "activity_count": 0.014650525499750797,
+            "trip_count": 0.014650525499750797,
+            "activity_type": 0.009758674358796893,
+            "mode_top1": 0.01719110325732796,
+            "trip_mode": 0.01586147495672449,
+            "dwell_time": 0.0488498058841137,
+            "first_departure_hour": 0.0315937409565483,
+            "travel_time": 0.04969823952089096
+          },
+          "male": {
+            "people": 1302,
+            "sequence_pattern": 0.04272253013740726,
+            "activity_count": 0.02833979870729509,
+            "trip_count": 0.02833979870729509,
+            "activity_type": 0.010858614023425693,
+            "mode_top1": 0.029135001620710456,
+            "trip_mode": 0.028874282348452508,
+            "dwell_time": 0.09357679015667436,
+            "first_departure_hour": 0.026406901388959195,
+            "travel_time": 0.10915857588439108
+          }
+        },
+        "people_weighted_mean": {
+          "activity_count": 0.021368744013215805,
+          "activity_type": 0.010298486436952452,
+          "dwell_time": 0.07080025199149176,
+          "first_departure_hour": 0.02904822074659692,
+          "mode_top1": 0.023052752586059214,
+          "sequence_pattern": 0.030185216102265523,
+          "travel_time": 0.07887930169400711,
+          "trip_count": 0.021368744013215805,
+          "trip_mode": 0.02224770760807386
+        },
+        "people_in_kept_groups": 2653
+      }
+    },
+    "subgroup_mean": {
+      "activity_count": 0.027768823199600206,
+      "activity_type": 0.015966979286413763,
+      "dwell_time": 0.09586151478994187,
+      "first_departure_hour": 0.04942547858036509,
+      "mode_top1": 0.029508026971792622,
+      "sequence_pattern": 0.041460178369225366,
+      "travel_time": 0.08644651152740723,
+      "trip_count": 0.027768823199600206,
+      "trip_mode": 0.028683011581272923
+    }
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "people": {
+    "Ground Truth": 2653,
+    "Pre-RL": 2653,
+    "Post-RL": 2653,
+    "Teacher": 2653
+  },
+  "jsd_vs_gt": {
+    "24h_activity_profile": {
+      "Ground Truth": 0.0,
+      "Pre-RL": 0.0192938271946042,
+      "Post-RL": 0.019769203144390558
+    },
+    "mode_selected_legs": {
+      "Pre-RL": 0.025611093939695725,
+      "Post-RL": 0.01604514367210816
+    },
+    "mode_policy_output": {
+      "Pre-RL": 0.020773417054153132,
+      "Post-RL": 0.006909080506130979
+    },
+    "mode_top1": {
+      "Pre-RL": 0.019703681339584486,
+      "Post-RL": 0.007529823433732867
+    },
+    "activity_count": {
+      "Pre-RL": 0.0421108543041361,
+      "Post-RL": 0.03889853600154628
+    },
+    "non_home_activity_types": {
+      "Pre-RL": 0.013063979232905198,
+      "Post-RL": 0.012705382965655418
+    },
+    "activity_sequence_patterns": {
+      "Pre-RL": 0.1510183935488922,
+      "Post-RL": 0.1502291824795064
+    },
+    "dwell_home": {
+      "Pre-RL": 0.023650192844052138,
+      "Post-RL": 0.022565743588012083
+    },
+    "dwell_work": {
+      "Pre-RL": 0.09070755467995162,
+      "Post-RL": 0.09874669394746585
+    },
+    "dwell_school": {
+      "Pre-RL": 0.07361843628259014,
+      "Post-RL": 0.0636288253404573
+    },
+    "dwell_shopping": {
+      "Pre-RL": 0.029501792536320685,
+      "Post-RL": 0.028863323297344496
+    },
+    "dwell_eat_out": {
+      "Pre-RL": 0.05458944937920532,
+      "Post-RL": 0.025695799516809684
+    },
+    "dwell_leisure": {
+      "Pre-RL": 0.04191222839968541,
+      "Post-RL": 0.04538745958961855
+    },
+    "dwell_escort_care": {
+      "Pre-RL": 0.04935367856586702,
+      "Post-RL": 0.0631477010309705
+    },
+    "dwell_other": {
+      "Pre-RL": 0.17787925315623057,
+      "Post-RL": 0.16779860861573698
+    },
+    "first_departure_from_home": {
+      "Pre-RL": 0.04624011157372007,
+      "Post-RL": 0.037294216072701204
+    },
+    "final_arrival_at_home": {
+      "Pre-RL": 0.06662649112438887,
+      "Post-RL": 0.06930563269202017
+    },
+    "non_home_location_scope": {
+      "Pre-RL": 0.008853879820777339,
+      "Post-RL": 0.006271132951599418
+    }
+  },
+  "sequence_pattern_stats": {
+    "Ground Truth": {
+      "unique_patterns": 476,
+      "share_of_people_with_pattern_seen_in_gt": 1.0
+    },
+    "Pre-RL": {
+      "unique_patterns": 187,
+      "share_of_people_with_pattern_seen_in_gt": 0.9600452318130418
+    },
+    "Post-RL": {
+      "unique_patterns": 228,
+      "share_of_people_with_pattern_seen_in_gt": 0.9528835280814173
+    }
+  },
+  "text_cosine": {
+    "persona~reasoning1": {
+      "Teacher": {
+        "mean": 0.7061953544616699,
+        "median": 0.707654595375061,
+        "shuffled_person_mean": 0.5478150248527527
+      },
+      "Pre-RL": {
+        "mean": 0.71358323097229,
+        "median": 0.7192542552947998,
+        "shuffled_person_mean": 0.5626906752586365
+      },
+      "Post-RL": {
+        "mean": 0.7130396366119385,
+        "median": 0.7140735387802124,
+        "shuffled_person_mean": 0.5600237846374512
+      }
+    },
+    "reasoning1~reasoning2": {
+      "Teacher": {
+        "mean": 0.5673694610595703,
+        "median": 0.5590522885322571,
+        "shuffled_person_mean": 0.46043211221694946
+      },
+      "Pre-RL": {
+        "mean": 0.5677511692047119,
+        "median": 0.5545517206192017,
+        "shuffled_person_mean": 0.4678947329521179
+      },
+      "Post-RL": {
+        "mean": 0.5686896443367004,
+        "median": 0.5565499067306519,
+        "shuffled_person_mean": 0.47192639112472534
+      }
+    },
+    "persona~reasoning2": {
+      "Teacher": {
+        "mean": 0.6246529817581177,
+        "median": 0.633293628692627,
+        "shuffled_person_mean": 0.4848253130912781
+      },
+      "Pre-RL": {
+        "mean": 0.6129518151283264,
+        "median": 0.6162189841270447,
+        "shuffled_person_mean": 0.48144131898880005
+      },
+      "Post-RL": {
+        "mean": 0.6178730130195618,
+        "median": 0.6216168999671936,
+        "shuffled_person_mean": 0.4805000424385071
+      }
+    }
+  },
+  "text_sentiment": {
+    "persona": {
+      "Teacher": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9483603467772334,
+        "share_positive": 0.05163965322276668,
+        "mean_score_pos_minus_neg": 0.19221936166286469
+      },
+      "Pre-RL": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9592913682623445,
+        "share_positive": 0.04070863173765549,
+        "mean_score_pos_minus_neg": 0.19475790858268738
+      },
+      "Post-RL": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9607990953637392,
+        "share_positive": 0.03882397286091217,
+        "mean_score_pos_minus_neg": 0.18999485671520233
+      }
+    },
+    "reasoning1": {
+      "Teacher": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.8891820580474934,
+        "share_positive": 0.11044101017715793,
+        "mean_score_pos_minus_neg": 0.21767787635326385
+      },
+      "Pre-RL": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9050131926121372,
+        "share_positive": 0.09460987561251413,
+        "mean_score_pos_minus_neg": 0.20917806029319763
+      },
+      "Post-RL": {
+        "share_negative": 0.0007538635506973238,
+        "share_neutral": 0.919713531850735,
+        "share_positive": 0.07953260459856766,
+        "mean_score_pos_minus_neg": 0.19733041524887085
+      }
+    },
+    "reasoning2": {
+      "Teacher": {
+        "share_negative": 0.003769317753486619,
+        "share_neutral": 0.8982284206558613,
+        "share_positive": 0.09800226159065209,
+        "mean_score_pos_minus_neg": 0.2163994461297989
+      },
+      "Pre-RL": {
+        "share_negative": 0.0007538635506973238,
+        "share_neutral": 0.9072747832642292,
+        "share_positive": 0.0919713531850735,
+        "mean_score_pos_minus_neg": 0.2134004831314087
+      },
+      "Post-RL": {
+        "share_negative": 0.0018846588767433095,
+        "share_neutral": 0.9170750094232943,
+        "share_positive": 0.0810403316999623,
+        "mean_score_pos_minus_neg": 0.2054557502269745
+      }
+    }
+  }
+}

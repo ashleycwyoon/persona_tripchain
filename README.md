@@ -208,6 +208,28 @@ Notes:
   checked first.
 - The scoring script for `s1_multiseed/` is not in the repository yet.
 
+## Included data and results
+
+| Path | Contents |
+|---|---|
+| `data/processed_v2/` | The v2 dataset: ground truth and demographics of the train, validation and test people, the split, the Teacher inputs and labels (`sft_build/`, `teacher_relabel/`) and the SFT examples (`sft/`) |
+| `results/v2/<run>/analysis/` | `metrics.json`, paired bootstraps, comparison tables and figures of every run |
+| `results/v2/<run>/*_validation/` | Validation answers of both Students and the final rollouts, gzipped (`student1.jsonl.gz`, `student2.jsonl.gz`, `rollouts.jsonl.gz`) |
+
+`<run>` is the folder name under `$V2`; the round-1 files sit directly in
+`results/v2/`. The context-Teacher run (`v2ctxt`) has only its Pre-RL results so far.
+Adapters, train rollouts and the test-split rollouts are not included.
+
+To skip tutorial step 1, copy the dataset to where the code reads it:
+
+```bash
+mkdir -p $DATA_HOME/tripchain_1030 && cp -r data/processed_v2 $DATA_HOME/tripchain_1030/
+```
+
+Rollouts and evaluation still need the location codebook, the POI catalog and
+GraphHopper (see Setup). `data/processed_v2` is person-level data derived from the
+KTDB 2021 survey: keep it inside the project and follow the KTDB terms of use.
+
 ## Reading the results
 
 `metrics.json` from `scripts/evaluate_population.py`:
