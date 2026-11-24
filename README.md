@@ -221,6 +221,9 @@ where a day may end away from home, are included. For Pre-RL, round 1 and trip-m
 weight 0.94 these are the re-evaluated files in `noendhome/`; the earlier results of
 those runs, made while every day had to end at home, were removed.
 The context-Teacher run (`v2ctxt`) has only its Pre-RL results so far.
+All included GRPO results were trained while the distribution rewards were centered
+within each person; `scripts/prepare_policy_updates.py` now centers them within the
+demographic cell instead (see its docstring), so a rerun gives different update files.
 Adapters, train rollouts and the test-split rollouts are not included.
 
 To skip tutorial step 1, copy the dataset to where the code reads it:

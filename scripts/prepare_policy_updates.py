@@ -48,6 +48,18 @@ also carry each trip's distance band (prior `trip_mode_prior_strength`). With
 distance bands in trip-purpose x demographic cells (prior
 `trip_distance_prior_strength`).
 
+The distribution terms are not centered within the person (or branch). Each
+sample keeps its own weighted log P/Q, which already compares it with the group
+distribution, minus the mean of that term over the person's demographic cell
+(occupation x age x gender), and the result is added to the person-centered
+individual advantage. The cell mean depends only on the input, so it is a
+baseline: it removes the cell's common level (E_Q log P/Q = -KL(Q||P) < 0, which
+would push every generated pattern down) and keeps the differences between
+patterns. A person whose samples all share one over-represented pattern then
+still gets a negative advantage on each of them. (If the terms were part of the
+return and centered per person, they would cancel whenever a person's samples
+agree: 37% of the v2 train people for Student1.)
+
 This does not silently treat a single sample as GRPO: groups smaller than
 --min-group-size are skipped and counted.
 
@@ -71,6 +83,7 @@ from tripchain.common import load_config, resolve, rows_by_id  # noqa: E402
 from tripchain.distribution_reward import (  # noqa: E402
     build_departure_rewards,
     build_distribution_rewards,
+    cell_values,
     departure_hour,
     distance_band_rewards,
 )
@@ -90,9 +103,13 @@ def centered(values: list[float]) -> list[float]:
     return [value - mean for value in values]
 
 
-def pooled_advantages(groups: list[list[float]]) -> list[list[float]]:
-    """Center each group, then scale all groups by one shared std."""
+def pooled_advantages(groups: list[list[float]], offsets: list[list[float]] | None = None) -> list[list[float]]:
+    """Center each group, add the uncentered offsets, then scale all groups by one shared std."""
     centered_groups = [centered(values) for values in groups]
+    if offsets is not None:
+        centered_groups = [
+            [value + offset for value, offset in zip(values, extra)] for values, extra in zip(centered_groups, offsets)
+        ]
     flat = [value for values in centered_groups for value in values]
     scale = (math.sqrt(sum(value * value for value in flat) / len(flat)) if flat else 0.0) or 1.0
     return [[value / scale for value in values] for values in centered_groups]
@@ -241,16 +258,34 @@ def add_distribution_rewards(rows: list[dict], config: dict, targets: dict[str, 
         sequence_reward = sequence_rewards[branch_index[(str(row["person_id"]), branch_key(row))]]
         row["rewards"]["components"]["distribution_sequence"] = sequence_reward
         row["rewards"]["components"]["distribution_trip_mode"] = mode_reward
-        returns = row["rewards"]["returns"]
-        returns["student1"] = float(returns["student1"]) + sequence_weight * sequence_reward
-        returns["student2"] = float(returns["student2"]) + mode_weight * mode_reward
+        student2_terms = [mode_weight * mode_reward]
         if departure_weight:
             row["rewards"]["components"]["distribution_first_departure"] = departure_reward
-            returns["student2"] = float(returns["student2"]) + departure_weight * departure_reward
+            student2_terms.append(departure_weight * departure_reward)
         if distance_weight:
             row["rewards"]["components"]["distribution_trip_distance"] = distance_reward
-            returns["student2"] = float(returns["student2"]) + distance_weight * distance_reward
+            student2_terms.append(distance_weight * distance_reward)
+        # Kept apart from the returns so that main() does not center them per person.
+        row["rewards"]["distribution_returns"] = {
+            "student1": sequence_weight * sequence_reward,
+            "student2": sum(student2_terms),
+        }
+
+    def cell(row: dict) -> tuple[str, str, str]:
+        values = cell_values(row["decision_trace"]["student1"]["input"]["demographics"])
+        return values["occupation"], values["age"], values["gender"]
+
+    for student in ("student1", "student2"):
+        totals: dict[tuple, list[float]] = defaultdict(lambda: [0.0, 0.0])
+        for row in rows:
+            total = totals[cell(row)]
+            total[0] += row["rewards"]["distribution_returns"][student]
+            total[1] += 1.0
+        for row in rows:
+            total = totals[cell(row)]
+            row["rewards"]["distribution_returns"][student] -= total[0] / total[1]
     return {
+        "distribution_baseline": "demographic_cell",
         "distribution_truth_people": len(truth),
         "distribution_branches": len(branches),
         "distribution_sequence_mean": sum(sequence_rewards) / max(1, len(sequence_rewards)),
@@ -276,6 +311,11 @@ def generated_departure(row: dict) -> tuple[dict, str, str] | None:
         str(sequence[1]),
         departure_hour(float(spatial[0].get("dwell_time_min", 0))),
     )
+
+
+def population_term(row: dict, student: str) -> float:
+    """Distribution term of one rollout, not centered per person (0 without rewards.distribution)."""
+    return float((row["rewards"].get("distribution_returns") or {}).get(student, 0.0))
 
 
 def update_record(person_id: str, row: dict, student: str, value: float, advantage: float, **extra) -> dict:
@@ -346,15 +386,15 @@ def main() -> None:
     counts["unjudged_rollouts"] = sum(
         row.get("status") == UNJUDGED for branches in people.values() for rows in branches.values() for row in rows
     )
-    student2_groups: list[tuple[str, list[dict], list[float]]] = []
-    student1_groups: list[tuple[str, list[list[dict]], list[float]]] = []
+    student2_groups: list[tuple[str, list[dict], list[float], list[float]]] = []
+    student1_groups: list[tuple[str, list[list[dict]], list[float], list[float]]] = []
     for person_id, branches in people.items():
         for rows in branches.values():
             if len(rows) < args.min_group_size:
                 counts["skipped_student2_branches"] += 1
                 continue
             returns = [student2 for _, student2 in neutral_returns(rows, rewards_config)]
-            student2_groups.append((person_id, rows, returns))
+            student2_groups.append((person_id, rows, returns, [population_term(row, "student2") for row in rows]))
 
         if len(branches) < args.min_group_size:
             counts["skipped_student1_people"] += 1
@@ -364,21 +404,28 @@ def main() -> None:
         flat = [row for rows in branch_rows for row in rows]
         student1_by_row = {id(row): student1 for row, (student1, _) in zip(flat, neutral_returns(flat, rewards_config))}
         means = [sum(student1_by_row[id(row)] for row in rows) / len(rows) for rows in branch_rows]
-        student1_groups.append((person_id, branch_rows, means))
+        # The sequence term is the same for every row of a branch.
+        student1_groups.append(
+            (person_id, branch_rows, means, [population_term(rows[0], "student1") for rows in branch_rows])
+        )
 
     try:
-        student2_advantages = pooled_advantages([returns for _, _, returns in student2_groups])
-        for (person_id, rows, returns), group_advantages in zip(student2_groups, student2_advantages):
-            for row, value, advantage in zip(rows, returns, group_advantages):
-                record = update_record(person_id, row, "student2", value, advantage)
+        student2_advantages = pooled_advantages(
+            [returns for _, _, returns, _ in student2_groups], [terms for _, _, _, terms in student2_groups]
+        )
+        for (person_id, rows, returns, terms), group_advantages in zip(student2_groups, student2_advantages):
+            for row, value, term, advantage in zip(rows, returns, terms, group_advantages):
+                record = update_record(person_id, row, "student2", value + term, advantage)
                 handles["student2"].write(json.dumps(record, ensure_ascii=False) + "\n")
                 counts["student2"] += 1
 
-        student1_advantages = pooled_advantages([means for _, _, means in student1_groups])
-        for (person_id, branch_rows, means), group_advantages in zip(student1_groups, student1_advantages):
-            for rows, value, advantage in zip(branch_rows, means, group_advantages):
+        student1_advantages = pooled_advantages(
+            [means for _, _, means, _ in student1_groups], [terms for _, _, _, terms in student1_groups]
+        )
+        for (person_id, branch_rows, means, terms), group_advantages in zip(student1_groups, student1_advantages):
+            for rows, value, term, advantage in zip(branch_rows, means, terms, group_advantages):
                 # Every row in a branch shares the same Student1 prompt and output.
-                record = update_record(person_id, rows[0], "student1", value, advantage, branch_size=len(rows))
+                record = update_record(person_id, rows[0], "student1", value + term, advantage, branch_size=len(rows))
                 handles["student1"].write(json.dumps(record, ensure_ascii=False) + "\n")
                 counts["student1"] += 1
     finally:

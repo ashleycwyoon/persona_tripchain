@@ -145,7 +145,6 @@ step figures_validation $PY scripts/visualize_population.py --config "$CFG" \
   --sft-dir "$DATA/processed_v2ctxt/sft" --output "$OUT/analysis/distributions_validation" \
   --population "Pre-RL=$NE/pre_rl_validation/rollouts.jsonl" \
   --population "SeqBoost=$V2/seqboost/post_rl_validation/rollouts.jsonl" \
-  --population "Context Pre-RL=$V2/v2ctx/pre_rl_validation/rollouts.jsonl" \
   --population "Context+Teacher Pre-RL=$PRE/rollouts.jsonl" \
   --population "Context+Teacher GRPO=$D/rollouts.jsonl"
 echo "v2ctxt finished ($(date))"
