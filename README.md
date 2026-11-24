@@ -3,657 +3,233 @@
 Persona-conditioned generation of one-day trip chains for Seoul residents, learned
 from the KTDB 2021 household travel survey.
 
-Two small language models (Qwen3.5-2B with LoRA adapters) generate a person's day
-from their demographics, and a non-learning environment turns it into a routed,
-scheduled day on the real network:
+Two small language models (Qwen3.5-2B with LoRA adapters) write a person's day from
+their demographics, and a fixed environment turns it into a routed, scheduled day:
 
 - **Student1** writes a persona, its reasoning and the **activity sequence**.
 - **Student2** writes its reasoning, the **location** (administrative dong) and
   **dwell time** of every activity, and the **main mode** of every trip.
-- The **environment** picks POIs, routes every trip with GraphHopper (walk, bicycle,
-  bus, subway, car), schedules the day and checks hard feasibility.
+- The **environment** picks POIs, routes every trip with GraphHopper, schedules the
+  day and checks feasibility. It is not learned.
 
-The Students are first trained by supervised fine-tuning (SFT) on Teacher-written
-personas and reasoning, then fine-tuned with dense rewards from the environment
-(GRPO). At test time an infeasible day goes through a bounded refinement loop.
+The Students are trained by supervised fine-tuning (SFT) on Teacher-written personas
+and reasoning, then fine-tuned with rewards from the environment (GRPO). At test time
+an infeasible day goes through a bounded refinement loop.
 
-## Contents
+![PersonaTC framework](docs/figures/framework.png)
 
-1. [How the framework works](#1-how-the-framework-works)
-2. [Repository layout](#2-repository-layout)
-3. [Requirements](#3-requirements)
-4. [Data and output locations](#4-data-and-output-locations)
-5. [Tutorial: running the full framework](#5-tutorial-running-the-full-framework)
-6. [Reading the results](#6-reading-the-results)
-7. [Configuration reference](#7-configuration-reference)
-8. [Development](#8-development)
+The figure shows round 1 on the v2 data split. Its source is in `docs/figures/src/`.
 
-## 1. How the framework works
+## How it works
 
-![PersonaTC framework: Teacher reasoning and subtask SFT, long-horizon dense-reward fine-tuning, and testing](docs/figures/framework.png)
+**Students.** Prompts and answers are JSON. Each answer gives the reasons before the
+decisions.
 
-The figure shows round 1 on the v2 split (weights of `configs/framework_grpo_train_v2.yaml`).
-Its source is `docs/figures/src/framework.html`.
-
-| Stage | What happens | Where |
+| | Reads | Writes |
 |---|---|---|
-| Ground truth | KTDB trips become one day per person (03:00 to 03:00), split train / validation / test = 70 / 10 / 20 | `scripts/rebuild_ground_truth_v2.py` |
-| Teacher | A large LLM writes the persona and the reasoning that explain each observed day | `scripts/run_teacher_2gpu.py`, `tripchain/ktdb/` |
-| SFT | Each Student learns to write the Teacher text and the observed decisions | `scripts/train_student1.py`, `scripts/train_student2_tripmode.py` |
-| Rollout | Student1, Student2, then the environment, for every person | `scripts/run_student_inference_2gpu.py`, `scripts/run_rollouts_parallel.py` |
-| GRPO | Group-relative policy update from the rollout rewards | `scripts/prepare_policy_updates.py`, `scripts/train_group_relative.py` |
-| Testing | Generation, refinement of infeasible days, evaluation against the ground truth | `scripts/refine_infeasible.py`, `scripts/evaluate_population.py` |
+| Student1 | demographics (gender, age, occupation, can_drive, residence) | `persona_bundle`, `reasoning1`, `activity_sequence` |
+| Student2 | demographics and the Student1 answer | `reasoning2`, `location_dwell_by_activity`, `trip_modes` |
 
-### Student prompts and answers
+An invalid answer is generated again from the same prompt. There is no constrained
+decoding.
 
-Both prompts are compact JSON user messages; both answers are JSON objects whose keys
-are written in the order below (reasons before the decisions they explain).
+**Environment.** Each activity gets candidate POIs inside the dong Student2 named.
+GraphHopper routes every trip in the mode Student2 named (walk, car, bus, subway;
+bicycle time is walk time divided by 3). The day runs 1,440 minutes from 03:00, and
+the last stay lasts until the day ends. A day is feasible when it starts at home,
+every trip is routable, a car or bicycle is where the traveler left it, and it ends
+within the day. Days with an activity outside Seoul are set aside as
+`outside_poi_coverage`.
 
-| | Prompt (user message) | Answer |
-|---|---|---|
-| Student1 | `{"demographics": {gender, age, occupation, can_drive, residence: {sido, sigungu, administrative_dong_name}}}` | `persona_bundle`, `reasoning1`, `activity_sequence` |
-| Student2 | `demographics`, `activity_sequence`, `persona_bundle`, `reasoning1` | `reasoning2`, `location_dwell_by_activity`, `trip_modes` |
+**Rewards.** Individual rewards compare a generated day with that person's own
+ground truth: activity sequence, location, dwell, trip mode, feasibility and start
+time. Distribution rewards compare the generated population with the train ground
+truth among similar people (occupation, age group, gender): sequence pattern for
+Student1; trip mode, first departure and, optionally, trip distance for Student2.
+The weights are in `configs/framework_grpo_train_*.yaml`, with the reason for each
+value written next to it.
 
-- Activity types: `home`, `work`, `school`, `shopping`, `eat_out`, `leisure`, `escort_care`, `medical`, `other`.
-- A location is `{"scope": "seoul", "administrative_dong_name", "gu"}` or
-  `{"scope": "external", "sido", "sigungu"}`. Student2 receives no list of
-  locations; its answer is validated against the KTDB location codebook after
-  generation.
-- `trip_modes[i]` is the main mode of the trip from activity `i` to activity `i+1`.
-- There is no constrained decoding. An invalid answer is regenerated from the same
-  prompt; people whose Student2 answer never validates get a new Student1 answer
-  (`scripts/repair_student2_failures.py`). Every accepted answer is stored with the
-  exact prompt that produced it, and GRPO trains on those stored prompts.
+**GRPO.** Every train person gets several Student1 answers, and each of those gets
+two Student2 answers. Answers are compared within their group, and each Student is
+updated with a clipped policy-gradient step that stays close to its starting adapter.
 
-### Environment
+## Repository layout
 
-- **POI grounding.** Each activity gets a seeded pool of activity-compatible POIs
-  inside the dong Student2 named. All home activities share one synthetic home anchor.
-- **Routing.** GraphHopper supplies walk, car, bus and subway routes; bus and subway
-  use the GTFS timetable at the actual departure time. Bicycle time is synthetic:
-  walk time divided by 3.
-- **Mode.** A trip is routed in the mode Student2 named. If that mode cannot be
-  realized (no route, or the car or bicycle is not at the origin) the trip falls back
-  to another mode and counts as a mode violation.
-- **Schedule.** An activity starts on arrival and lasts its predicted dwell. The day
-  runs 1,440 minutes from 03:00; the last stay, whatever its type, is the rest of the
-  day.
-- **Hard feasibility.** The day starts at home, every trip is routable, a private car
-  or bicycle is where the traveler left it, and the day ends within 1,440 minutes. A
-  day with an activity outside Seoul cannot be grounded and is set aside as
-  `outside_poi_coverage`.
-- **End of the day.** 3.7% of the ground-truth days end away from home (for example
-  at work), so the evaluation configs and the later train configs accept such days
-  (`activity_constraints.require_end_home: false`). The two round-1 train configs
-  still require the day to end at home, as in the reference round-1 runs.
-
-### Rewards and GRPO
-
-Individual rewards compare a generated day with that person's own ground truth
-(`tripchain/rewards.py`). Location, dwell, trip mode and start time are scored on
-activities matched by the longest common subsequence of the two activity sequences.
-
-| Component | Meaning | Weight |
-|---|---|---|
-| activity | LCS F1 of the activity sequences | 1.0 |
-| location | same dong 1, same gu 0.5 (outside Seoul: same sigungu 1, same sido 0.5) | 1.0 |
-| dwell | `exp(-error / 120 min)` | 1.0 |
-| trip_mode | share of trips with the right main mode | 0.5 |
-| feasibility | bonus for a feasible day minus violation penalties | 1.5 |
-| start_time | `exp(-error / 60 min)` of the realized activity starts | 1.0 |
-
-Each Student receives a discounted return (discount 0.95): Student2 its own location,
-dwell and mode rewards plus the discounted realized outcome (feasibility, start
-time); Student1 the activity reward plus Student2's rewards one step discounted and
-the realized outcome two steps discounted.
-
-Distribution rewards (`tripchain/distribution_reward.py`) keep the generated
-population from collapsing onto the most common days. Within a cell of similar
-people (occupation, age bucket, gender), `clip(log P - log Q, ±3)` compares the share
-`Q` the policy generates with the share `P` in the train ground truth. Student1
-receives it for its activity sequence, Student2 for its trip modes and its first
-departure hour. Trip-mode cells can also carry the trip's distance band
-(`trip_mode_cells: distance`). With `trip_distance` set, Student2 also receives it for
-the distance band of each trip, in cells of the trip purpose (the activity the trip
-arrives at): the mode reward alone cannot correct a policy that picks too many far
-destinations, because a far trip by subway is right within its own distance band.
-
-GRPO groups are two-level: every train person has several Student1 answers (two in
-round 1, three in `scripts/run_v2_round2seq.sh`), and each of them has two Student2
-answers. Student2 advantages compare answers to one identical prompt; Student1
-advantages compare a person's Student1 answers by their mean return. The update is a
-clipped, reference-regularized policy-gradient step
-(`scripts/train_group_relative.py`).
-
-## 2. Repository layout
-
-```
-personaTC/
-├── configs/        run and training configurations
-├── scripts/        command-line entry points and pipeline scripts
-├── tripchain/      the Python package (environment, rewards, inference, KTDB Teacher data)
-├── prompts/        the Teacher prompt
-├── templates/      chat template used for the SFT loss mask
-├── docs/figures/   the framework figure and its source
-└── tests/          unit tests
-```
-
-### `tripchain/` — package
-
-| File | Role |
+| Path | Contents |
 |---|---|
-| `__init__.py` | Exposes `TripChainEnvironment` and `score_rollout` |
-| `paths.py` | Where data, outputs and model weights live; expands `${...}` variables in configs |
-| `common.py` | Config loading, JSONL helpers, the Students' JSON key orders |
-| `residence.py` | Adds and validates the residence in the Student demographics |
-| `inference.py` | Student1 / Student2 prompts, generation and answer validation on one GPU |
-| `parallel_inference.py` | Runs inference as one shard per GPU and merges the results |
-| `policy_runtime.py` | Both Students in one process, used by the refinement loop |
-| `poi.py` | POI grounding: candidate POIs per activity inside the predicted dong |
-| `graphhopper.py` | GraphHopper client (walk, car, bus, subway; synthetic bicycle) with caching |
-| `scheduling.py` | Places an activity on arrival without stretching its dwell |
-| `optimizer.py` | Joint POI and mode selection over hard-feasible chains |
-| `environment.py` | The environment: grounding, routing, scheduling, violation counts |
-| `rewards.py` | Individual reward components and each Student's discounted return |
-| `distribution_reward.py` | Population-level rewards on smoothed demographic cells |
-| `trip_distance.py` | Distance band of a trip, for distance-conditioned trip-mode cells and the trip-distance reward |
-| `trip_modes.py` | Main mode of a KTDB trip, and the person-level mode ranking derived from trips |
-| `rollout.py` | One rollout row: decision trace, environment result, rewards, status |
-| `refinement.py` | Bounded refinement of an infeasible day (Lv.1, Lv.2, Lv.3) |
-| `population_metrics.py` | Jensen-Shannon divergences for the population and persona subgroups |
-| `ktdb/ktdb_two_stage_teacher.py` | Teacher inputs, prompt construction, answer parsing and validation |
-| `ktdb/ktdb_student1.py`, `ktdb_student2.py`, `ktdb_student_common.py` | Build the Student SFT chat examples from the Teacher labels |
+| `tripchain/` | The package: Student inference (`inference.py`, `parallel_inference.py`, `policy_runtime.py`), environment (`environment.py`, `poi.py`, `graphhopper.py`, `scheduling.py`, `optimizer.py`), rewards (`rewards.py`, `distribution_reward.py`, `trip_distance.py`, `trip_modes.py`), rollout and refinement (`rollout.py`, `refinement.py`), metrics (`population_metrics.py`), paths and config loading (`paths.py`, `common.py`, `residence.py`) |
+| `tripchain/ktdb/` | Teacher inputs, prompt and answer validation (`ktdb_two_stage_teacher.py`); builders of the SFT examples (`ktdb_student1.py`, `ktdb_student2.py`, `ktdb_student_common.py`) |
+| `scripts/` data | `prepare_ktdb_training_data.py` (with `ktdb_admin_registry.py`, `korean_admin_english.py`), `prepare_residence_data.py`, `build_train_ground_truth.py`, `build_trip_mode_data.py`, `rebuild_ground_truth_v2.py`, `build_teacher_relabel_inputs.py`, `build_sft_v2.py` |
+| `scripts/` Teacher and SFT | `run_teacher_2gpu.py` (starts `teacher_worker.py` on each GPU), `train_student1.py`, `train_student2_tripmode.py` |
+| `scripts/` generation | `run_student_inference.py`, `run_student_inference_2gpu.py`, `repair_student2_failures.py`, `start_graphhopper.sh`, `run_rollouts.py`, `run_rollouts_parallel.py`, `refine_infeasible.py` |
+| `scripts/` GRPO | `measure_distribution_weights.py`, `prepare_policy_updates.py`, `train_group_relative.py` |
+| `scripts/` evaluation | `evaluate_population.py`, `compare_rollouts.py`, `bootstrap_pair.py`, `visualize_population.py` |
+| `scripts/run_v2*.sh` | Pipelines that chain the scripts above (see [Experiments](#experiments)) |
+| `scripts/` context | `build_context_v2.py`, `teacher_ctx.py`, `teacher_ctx_python`, `build_sft_v2ctxt.py` |
+| `configs/` | `student*_sft.yaml` (SFT), `framework_grpo_train_*.yaml` (train rollouts and rewards), `framework_*_validation.yaml` and `framework_v2_test.yaml` (evaluation), `poi_category_map.yaml` (which POIs can host each activity) |
+| `prompts/`, `templates/` | The Teacher prompt; the chat template that limits the SFT loss to the answer |
+| `tests/` | Unit tests of the environment, rewards, GRPO grouping and answer validation |
 
-### `scripts/` — data preparation
+Every script starts with a docstring that says what it does, and `--help` lists its
+options.
 
-| File | Role |
-|---|---|
-| `prepare_ktdb_training_data.py` | Step 1: KTDB 2021 preprocessing: Seoul residents, person-level 90 / 10 split, demographics, activity sequences, spatial targets, location codebook |
-| `ktdb_admin_registry.py`, `korean_admin_english.py` | Read the administrative-code workbook and render Korean administrative names in English |
-| `run_teacher_2gpu.py`, `teacher_worker.py` | Steps 2 and 5: launch one Teacher worker (vLLM) per GPU and show progress |
-| `prepare_residence_data.py` | Adds the surveyed home location to the v1 train / test demographics |
-| `build_train_ground_truth.py` | Joins the v1 train targets into one ground-truth file |
-| `build_trip_mode_data.py` | Adds the main mode of every trip to the v1 ground truth |
-| `rebuild_ground_truth_v2.py` | Builds the v2 ground truth (clipped day, merged short round trips) and the 70 / 10 / 20 split |
-| `build_teacher_relabel_inputs.py` | Teacher inputs for the people whose day changed from v1 to v2 |
-| `build_sft_v2.py` | Student1 and Student2 SFT datasets on the v2 train and validation splits |
-| `build_context_v2.py` | Step 15: v2 data with household, student and work-status context in the demographics (`processed_v2ctx`) |
-| `teacher_ctx.py`, `teacher_ctx_python` | Step 15: runs the Teacher with that context in its prompt (the Teacher code itself is not changed) |
-| `build_sft_v2ctxt.py` | Step 15: SFT datasets whose targets come from the context Teacher (`processed_v2ctxt`) |
-
-### `scripts/` — training, inference, environment, evaluation
-
-| File | Role |
-|---|---|
-| `train_student1.py` | Student1 SFT (QLoRA) |
-| `train_student2_tripmode.py` | Student2 SFT (QLoRA) with per-trip modes |
-| `run_student_inference.py` | Student1 or Student2 inference on one GPU |
-| `run_student_inference_2gpu.py` | The same on several GPUs, one shard per GPU |
-| `repair_student2_failures.py` | New Student1 then Student2 answers for people without a valid Student2 answer |
-| `start_graphhopper.sh` | Starts the GraphHopper server the environment queries |
-| `run_rollouts.py` | Environment rollouts and rewards, single process |
-| `run_rollouts_parallel.py` | The same with several worker processes |
-| `refine_infeasible.py` | Refinement of infeasible rollouts (inference only) |
-| `measure_distribution_weights.py` | Distribution reward weights that balance individual and distribution rewards |
-| `prepare_policy_updates.py` | Turns rollout groups into GRPO training records with advantages |
-| `train_group_relative.py` | The GRPO update of one Student adapter |
-| `evaluate_population.py` | Metrics of one generated population against the ground truth |
-| `compare_rollouts.py` | Per-person comparison of two rollout files |
-| `bootstrap_pair.py` | Paired bootstrap confidence intervals between two populations |
-| `visualize_population.py` | Distribution figures of the ground truth and two to five populations |
-
-### `scripts/` — pipelines
-
-| File | Role |
-|---|---|
-| `run_v2_rollouts.sh` | Step 1: rollouts of the SFT Students on train (GRPO groups), validation and test |
-| `run_v2_grpo.sh` | Step 2: GRPO round 1, post-RL generation, refinement, evaluation and figures |
-| `run_v2_round2.sh` | Optional: a second GRPO round starting from the round-1 adapters |
-| `run_v2_distmode.sh` | Optional: round 1 with the distance-conditioned trip-mode reward |
-| `run_v2_distmode_weight.sh` | Optional: sweep of the trip-mode distribution weight |
-| `run_v2_tripdist.sh` | Optional: adds the trip-distance reward; only Student2 is retrained |
-| `run_v2_noendhome_baselines.sh` | Step 14: baselines re-rolled with days allowed to end away from home |
-| `run_v2_seqboost.sh` | Step 14: SeqBoost, both Students retrained with a stronger sequence reward and the trip-distance reward |
-| `run_v2_round2seq.sh` | Step 14: GRPO round 2 from the SeqBoost adapters, three Student1 answers per person |
-| `run_v2_round2bal.sh` | Step 14: the same round 2 with lower distribution weights, reusing the round2seq rollouts |
-| `run_v2_s1_multiseed.sh` | Step 14: two more Student1 validation answers per person (seeds 43, 44) for four models |
-| `run_v2ctx.sh` | Step 15: SFT, rollouts and GRPO with the context in the Student inputs |
-| `run_v2ctxt.sh` | Step 15: the same with SFT targets from the context Teacher |
-
-### `configs/`
-
-| File | Role |
-|---|---|
-| `student1_v2_sft.yaml`, `student2_v2_sft.yaml` | SFT settings of the two Students |
-| `framework_grpo_train_v2.yaml` | Train split: inference, environment and reward settings for GRPO rollouts |
-| `framework_grpo_train_v2_distmode.yaml` | The same with distance-conditioned trip-mode cells |
-| `framework_grpo_train_v2_tripdist.yaml` | Distance-mode config with trip-mode weight 0.94 and the trip-distance reward |
-| `framework_grpo_train_v2_seqboost.yaml` | SeqBoost: sequence weight 1.64, trip-distance weight 1.04 |
-| `framework_grpo_train_v2_round2seq.yaml` | Round 2 from the SeqBoost adapters, first-departure weight 0.86 |
-| `framework_grpo_train_v2_round2bal.yaml` | Round 2 from the SeqBoost adapters with lower distribution weights |
-| `framework_v2_validation.yaml`, `framework_v2_test.yaml` | Evaluation on the validation and test splits |
-| `student{1,2}_v2ctx_sft.yaml`, `framework_grpo_train_v2ctx.yaml`, `framework_v2ctx_validation.yaml` | Context run: SFT, GRPO train (SeqBoost rewards) and validation configs on `processed_v2ctx` |
-| `student{1,2}_v2ctxt_sft.yaml`, `framework_grpo_train_v2ctxt.yaml`, `framework_v2ctxt_validation.yaml` | The same for the context-Teacher run (`processed_v2ctxt` SFT data) |
-| `poi_category_map.yaml` | Which OSM tags and official building uses can host each activity type |
-
-### Other files
-
-| File | Role |
-|---|---|
-| `tests/test_framework.py` | Unit tests of the environment, rewards, GRPO grouping and answer validation (no GPU, data or routing server needed) |
-| `pyproject.toml` | Dependencies and the pytest and ruff settings |
-| `prompts/rationalizer_prompt.md` | The Teacher prompt |
-| `templates/qwen35_text_assistant_only.jinja` | Chat template that marks the assistant turn for the SFT loss mask |
-| `docs/figures/` | `framework.png` and its HTML source (`src/`) |
-
-The KTDB preprocessing, the Teacher, the SFT example builders and the QLoRA trainers
-come from the earlier `tripchain_1015` project (commit `637b7b0`). They now live in
-`scripts/`, `tripchain/ktdb/`, `prompts/` and `templates/`; only their imports and paths
-were adapted.
-
-## 3. Requirements
-
-- Python 3.10 or newer. Install the dependencies with
-  `pip install -e ".[train,dev]"`; add the `teacher` extra on the machine that runs
-  the Teacher.
-- Two GPUs for the pipeline scripts as written (they place jobs on GPU 0 and GPU 1).
-  The reference runs used two 48 GB GPUs; a GRPO update uses about 30 GB, and the
-  environment rollouts use 16 CPU workers.
-- A GraphHopper 11.0 server with a public-transit graph of Korea (see step 8).
-- Models are downloaded from Hugging Face on first use: `Qwen/Qwen3.5-2B`
-  (Students), `Qwen/Qwen2.5-32B-Instruct-AWQ` (Teacher), and two small text models
-  for the optional text figures.
-
-Versions of the reference environment: Python 3.10.20, torch 2.5.1 (CUDA 12.1),
-transformers 5.13.0, peft 0.19.1, trl 1.7.1, datasets 5.1.0, accelerate 1.13.0,
-bitsandbytes 0.49.2, vllm 0.7.3, pydantic 2.13.4, numpy 1.26.4, pandas 2.3.3,
-pyarrow 24.0.0, matplotlib 3.10.9.
-
-## 4. Data and output locations
-
-The repository holds code only. Three environment variables choose where everything
-else lives:
-
-| Variable | Default | Holds |
-|---|---|---|
-| `DATA_HOME` | `~/data` | raw survey data and every derived dataset |
-| `OUTPUT_HOME` | `~/outputs` | Teacher labels, adapters, rollouts, analyses |
-| `HF_HUB_CACHE` | the Hugging Face default (`~/.cache/huggingface/hub`, or `$HF_HOME/hub`) | downloaded model weights |
-
-Configs may use `${DATA_HOME}`, `${OUTPUT_HOME}`, `${DATA_ROOT}`
-(`$DATA_HOME/tripchain_1030`), `${OUTPUT_ROOT}` (`$OUTPUT_HOME/tripchain_1030`) and
-`${HF_HUB_CACHE}`. The folder names `tripchain_1015` (preprocessing and first Teacher run) and
-`tripchain_1030` (this framework) are the historical project names.
-
-```
-$DATA_HOME/
-├── KTDB_2021/①개인특성.csv, ②이동특성.csv        raw survey: people and trips (not distributed here)
-├── 행정동코드_20210726(말소코드포함).xlsx         administrative-code workbook
-├── south-korea-260714.osm.pbf                     OSM extract read by GraphHopper
-├── tripchain_1015/processed/                      preprocessing outputs (step 1)
-│   ├── train/, test/                              v1 split: demographics and targets
-│   ├── ktdb_location_whitelist.json               location codebook for Student2 validation
-│   └── testing/seoul_poi_catalog_by_admin_dong.parquet   POI catalog (provided, see below)
-└── tripchain_1030/
-    ├── processed/                                 v1 residence demographics and trip-mode ground truth (step 3)
-    ├── processed_v2/                              v2 ground truth, split and SFT data (steps 4 to 6)
-    ├── processed_v2ctx/, processed_v2ctxt/        v2 data with context; SFT data of the context Teacher (step 15)
-    └── external/GraphHopper/                      GraphHopper jar, JDK, config and GTFS (step 8)
-
-$OUTPUT_HOME/
-├── tripchain_1015/persona-rationale-multi-country-qwen35/reports/   Teacher labels (step 2)
-└── tripchain_1030/
-    ├── teacher_relabel_v2/                        Teacher labels for changed days (step 5)
-    ├── teacher_ctx/                               Teacher labels written with the context (step 15)
-    ├── runs/student1_v2_sft, runs/student2_v2_sft SFT adapters (step 7; step 15 adds student{1,2}_v2ctx_sft and _v2ctxt_sft)
-    └── v2/                                        rollouts, GRPO adapters, analyses (steps 10 to 15)
-```
-
-Two inputs are not produced by this repository and must be supplied:
-
-- **The KTDB 2021 microdata and the administrative-code workbook.**
-- **The POI catalog** `seoul_poi_catalog_by_admin_dong.parquet`: one row per POI in
-  Seoul with `poi_id`, `longitude`, `latitude`, `administrative_dong_code`, a
-  `name` or `official_building_name`, the OSM tag columns `amenity`, `shop`,
-  `office`, `leisure`, `tourism`, `healthcare`, `building`, and optionally
-  `official_main_use`, `match_confidence` and `source_kind`.
-
-## 5. Tutorial: running the full framework
-
-Run every command from the repository root. Steps 1 to 7 build the data and the SFT
-Students once; steps 8 to 12 are the framework itself, and steps 13 and 14 are the
-experiments built on it. Long steps are safe to interrupt: re-running the same
-command continues where it stopped.
-
-### Step 0. Setup
+## Setup
 
 ```bash
 git clone git@github.com:ashleycwyoon/persona_tripchain.git personaTC && cd personaTC
-pip install -e ".[train,dev]"
+pip install -e ".[train,dev]"        # add the "teacher" extra where the Teacher runs
+python -m pytest -q                  # 41 tests, no GPU or data needed
+```
 
-export DATA_HOME=~/data OUTPUT_HOME=~/outputs          # the defaults
-export HF_HUB_CACHE=~/.cache/huggingface/hub           # where model weights are stored
+- Python 3.10 or newer. The reference runs used torch 2.5.1, transformers 5.13.0,
+  peft 0.19.1, trl 1.7.1 and vllm 0.7.3.
+- Two GPUs (the pipelines place jobs on GPU 0 and GPU 1; the reference machine had
+  two 48 GB GPUs) and 16 CPU workers for the rollouts.
+- A GraphHopper 11.0 server with a public-transit graph of Korea.
+
+The repository holds code only. Three environment variables say where the rest lives:
+
+| Variable | Default | Holds |
+|---|---|---|
+| `DATA_HOME` | `~/data` | raw survey data and derived datasets |
+| `OUTPUT_HOME` | `~/outputs` | Teacher labels, adapters, rollouts, analyses |
+| `HF_HUB_CACHE` | the Hugging Face default | downloaded model weights |
+
+You must supply these inputs under `$DATA_HOME`:
+
+- `KTDB_2021/①개인특성.csv` and `②이동특성.csv`, the KTDB 2021 microdata.
+- `행정동코드_20210726(말소코드포함).xlsx`, the administrative-code workbook.
+- `tripchain_1015/processed/testing/seoul_poi_catalog_by_admin_dong.parquet`, one
+  row per Seoul POI with `poi_id`, `longitude`, `latitude`,
+  `administrative_dong_code`, a name, and the OSM tag columns (`amenity`, `shop`,
+  `office`, `leisure`, `tourism`, `healthcare`, `building`).
+- `tripchain_1030/external/GraphHopper/` with `graphhopper-web-11.0.jar`, a JDK 17
+  in `.jdk17/`, `gtfs.zip` and `config-pt-rebuilt.yml`.
+
+Datasets are written to `$DATA_HOME/tripchain_1015` and `$DATA_HOME/tripchain_1030`,
+and results to the same two folder names under `$OUTPUT_HOME`. The names are the
+historical project names.
+
+## Tutorial
+
+Run every command from the repository root. Long steps can be interrupted: running
+the same command again continues where it stopped.
+
+```bash
 V2_DATA=$DATA_HOME/tripchain_1030/processed_v2
 V2=$OUTPUT_HOME/tripchain_1030/v2
-
-python -m pytest -q                                     # 41 tests, no GPU or data needed
 ```
 
-### Step 1. KTDB preprocessing (v1 split)
+### 1. Data and Teacher labels
 
 ```bash
-python scripts/prepare_ktdb_training_data.py
-```
+python scripts/prepare_ktdb_training_data.py     # Seoul residents, demographics, observed days
+python scripts/run_teacher_2gpu.py --gpus 0,1    # Teacher personas and reasoning (Qwen2.5-32B, vLLM)
+python scripts/prepare_residence_data.py         # add the home location
+python scripts/build_train_ground_truth.py
+python scripts/build_trip_mode_data.py           # main mode of every trip
+python scripts/rebuild_ground_truth_v2.py        # v2 ground truth, split 70 / 10 / 20
 
-Reads the raw survey and writes `$DATA_HOME/tripchain_1015/processed/`: Seoul
-residents split 90 / 10 by person (seed 42), their demographics, activity sequences
-and spatial targets, and the location codebook. Put the POI catalog under
-`processed/testing/` (section 4).
-
-### Step 2. Teacher labels
-
-```bash
-python scripts/run_teacher_2gpu.py --gpus 0,1
-```
-
-The Teacher (Qwen2.5-32B, served by vLLM) reads each train person's observed day and
-writes the persona and reasoning that explain it, using the prompt in
-`prompts/rationalizer_prompt.md`. Output: two shard files
-`ktdb_teacher_qwen32b_english_demographics_shard{0,1}.jsonl` with their
-`.complete.json` manifests under
-`$OUTPUT_HOME/tripchain_1015/persona-rationale-multi-country-qwen35/reports/`.
-Later steps expect exactly these two shards, so keep `--gpus 0,1`. Add `--resume` to
-continue an interrupted run.
-
-### Step 3. Residence and per-trip modes (v1)
-
-```bash
-python scripts/prepare_residence_data.py       # demographics + surveyed home location
-python scripts/build_train_ground_truth.py     # train ground truth in one file
-python scripts/build_trip_mode_data.py         # main mode of every trip
-```
-
-Output under `$DATA_HOME/tripchain_1030/processed/{train,test}/`:
-`demographics_with_residence.jsonl` and `ground_truth_tripmode.jsonl`.
-
-### Step 4. Ground truth v2 and the 70 / 10 / 20 split
-
-```bash
-python scripts/rebuild_ground_truth_v2.py
-```
-
-Rebuilds every day from the raw trips (the day is clipped at 03:00 the next morning,
-and a short stop between two stays at the same place is merged into one stay), then
-splits the people. Output in `$V2_DATA/`: `{train,validation,test}/ground_truth_tripmode.jsonl`
-and `demographics_with_residence.jsonl`, `split_manifest.csv`, `manifest.json`, and
-`teacher_relabel_ids.txt`. With the default seed the split is 18,574 / 2,653 / 5,307
-people. Train and validation come only from the v1 train people, because only they
-have Teacher labels.
-
-### Step 5. Teacher labels for the days that changed
-
-```bash
-python scripts/build_teacher_relabel_inputs.py
+python scripts/build_teacher_relabel_inputs.py   # people whose day changed in v2
 python scripts/run_teacher_2gpu.py --gpus 0,1 \
   --demographics $V2_DATA/teacher_relabel/demographics.jsonl \
   --activity $V2_DATA/teacher_relabel/activity_sequence.jsonl \
   --spatial $V2_DATA/teacher_relabel/location_dwell_mode_preference.jsonl \
   --output-prefix $OUTPUT_HOME/tripchain_1030/teacher_relabel_v2/teacher_v2
+
+python scripts/build_sft_v2.py                   # SFT examples for both Students
 ```
 
-Only the train and validation people listed in `teacher_relabel_ids.txt` are
-labelled again.
+The split is 18,574 train, 2,653 validation and 5,307 test people. Keep
+`--gpus 0,1` for the Teacher, because later steps expect its two output shards.
 
-### Step 6. SFT datasets
-
-```bash
-python scripts/build_sft_v2.py
-```
-
-Output: `$V2_DATA/sft/student1_residence/` and `$V2_DATA/sft/student2_tripmode/`,
-each with `train.jsonl` and `validation.jsonl` (chat format, one person per line).
-
-### Step 7. SFT training
+### 2. SFT
 
 ```bash
-python scripts/train_student1.py --config configs/student1_v2_sft.yaml --gpu 0 --dry-run   # checks data and loss mask
 python scripts/train_student1.py --config configs/student1_v2_sft.yaml --gpu 0
 python scripts/train_student2_tripmode.py --config configs/student2_v2_sft.yaml --gpu 1
 ```
 
-The two trainings are independent and can run at the same time on different GPUs.
-Output: `$OUTPUT_HOME/tripchain_1030/runs/student1_v2_sft/final` and
-`.../student2_v2_sft/final`, the adapters named in the framework configs.
+The two trainings can run at the same time. `--dry-run` checks the data without
+training. The adapters are saved in `$OUTPUT_HOME/tripchain_1030/runs/`.
 
-### Step 8. Start GraphHopper
-
-```bash
-bash scripts/start_graphhopper.sh &
-curl http://localhost:8989/health        # prints OK when the server is ready
-```
-
-The script expects `$DATA_HOME/tripchain_1030/external/GraphHopper/` to contain
-`graphhopper-web-11.0.jar`, a JDK 17 in `.jdk17/`, `gtfs.zip` and
-`config-pt-rebuilt.yml` (profiles `car` and `foot`, the GTFS feed, and
-`graph.location` pointing at the graph cache). `graphhopper.service_date` in the
-framework configs must be a date the GTFS feed covers. Keep the server running for
-every rollout and refinement step.
-
-### Step 9. Smoke test on two people
+### 3. Rollouts, GRPO and evaluation
 
 ```bash
-CFG=configs/framework_v2_test.yaml; T=$OUTPUT_HOME/tripchain_1030/smoke
-python scripts/run_student_inference.py student1 --config $CFG --gpu 0 --limit 2 --output $T/student1.jsonl
-python scripts/run_student_inference.py student2 --config $CFG --gpu 0 --limit 2 \
-  --student1-input $T/student1.jsonl --output $T/student2.jsonl
-python scripts/run_rollouts.py --config $CFG --student1 $T/student1.jsonl --student2 $T/student2.jsonl \
-  --output $T/rollouts.jsonl
-python scripts/evaluate_population.py --ground-truth $V2_DATA/test/ground_truth_tripmode.jsonl \
-  --student1 $T/student1.jsonl --student2 $T/student2.jsonl --rollouts $T/rollouts.jsonl --output-dir $T/analysis
-```
-
-`rollouts.jsonl` holds, for each person, both prompts and answers, the POI
-candidates, the selected routes, the schedule, the violations and the rewards.
-
-### Step 10. Rollouts of the SFT Students
-
-```bash
+bash scripts/start_graphhopper.sh &              # keep it running; `curl localhost:8989/health` prints OK
 mkdir -p $V2
-nohup bash scripts/run_v2_rollouts.sh > $V2/run.log 2>&1 &
-tail -f $V2/run.log
-```
-
-Generates the GRPO groups on the train split (two Student1 answers per person, two
-Student2 answers for each) and the pre-RL baselines on validation and test, and
-rolls all of them out. Each step writes its own log to `$V2/logs/<step>.log`.
-Output: `$V2/grpo_train/s1_seed{42,43}/s2_sample{1,2}/rollouts.jsonl` and
-`$V2/pre_rl_{test,validation}/{student1,student2,rollouts}.jsonl`.
-
-The split sizes are written in the pipeline scripts (`N_TRAIN=18574`,
-`SIZE=([test]=5307 [validation]=2653)`); change them if your split differs.
-
-### Step 11. Distribution reward weights
-
-```bash
+bash scripts/run_v2_rollouts.sh                  # train rollouts for GRPO, pre-RL validation and test
 python scripts/measure_distribution_weights.py $V2/grpo_train/s1_seed*/s2_sample*/rollouts.jsonl \
-  --config configs/framework_grpo_train_v2.yaml > $V2/weights.json
+  --config configs/framework_grpo_train_v2.yaml  # prints the distribution weights
+bash scripts/run_v2_grpo.sh                      # GRPO, post-RL generation, refinement, evaluation
 ```
 
-Copy the three `weights` into `rewards.distribution` (`sequence`, `trip_mode`,
-`first_departure`) of `configs/framework_grpo_train_v2.yaml`. They make the
-distribution rewards vary as much within a group as the individual rewards do. The
-values in the repository (0.82, 1.04, 0.43) were measured on the reference run. When
-the config sets `distribution.trip_distance`, the output also has a `trip_distance`
-weight, which gives that term the same spread as the first-departure term.
+Copy the measured weights into `rewards.distribution` of
+`configs/framework_grpo_train_v2.yaml`; the values in the repository (0.82, 1.04,
+0.43) come from the reference run. The pipelines write one log per step to
+`$V2/logs/`. Results:
 
-### Step 12. GRPO and evaluation
+- `$V2/grpo/student{1,2}/final`: the GRPO adapters
+- `$V2/pre_rl_*/` and `$V2/post_rl_*/`: Student answers and `rollouts.jsonl`
+- `$V2/analysis/`: `metrics.json` per population, comparisons and figures
 
-```bash
-nohup bash scripts/run_v2_grpo.sh > $V2/grpo_run.log 2>&1 &
-tail -f $V2/grpo_run.log
-```
+To try the chain on two people first, run `scripts/run_student_inference.py`
+(`student1`, then `student2`) with `--limit 2`, then `scripts/run_rollouts.py` and
+`scripts/evaluate_population.py` on the result.
 
-Computes the advantages, updates both adapters (one GPU each), generates the post-RL
-populations on validation and test, refines infeasible days, and evaluates Pre-RL
-and Post-RL. Output:
+## Experiments
 
-- `$V2/grpo_train/updates/student{1,2}_updates.jsonl` — GRPO training records
-- `$V2/grpo/student{1,2}/final` — the GRPO adapters
-- `$V2/post_rl_{test,validation}/rollouts.jsonl` — final (refined) rollouts;
-  `rollouts_initial.jsonl` is before refinement
-- `$V2/pre_rl_{test,validation}/rollouts_refined.jsonl` — the refined baseline
-- `$V2/analysis/` — `metrics.json` per population, pre/post comparison, figures
+Each pipeline writes to its own folder under `$V2` and ends with paired bootstrap
+comparisons and distribution figures. Run them in this order; later ones read the
+results of earlier ones. All of them evaluate on the validation split.
 
-Choose settings on validation and report on test.
+| Command | What it does | Output |
+|---|---|---|
+| `bash scripts/run_v2_round2.sh` | Second GRPO round from the round-1 adapters | `round2/` |
+| `bash scripts/run_v2_distmode.sh` | Round 1 with trip-mode cells that include the distance band | `distmode/` |
+| `bash scripts/run_v2_distmode_weight.sh 0.94 0` | Trip-mode weight 0.94 on GPU 0; only Student2 is retrained | `distmode_w0.94/` |
+| `bash scripts/run_v2_tripdist.sh 1.04 0` | Adds the trip-distance reward with weight 1.04 | `tripdist_w1.04/` |
+| `bash scripts/run_v2_noendhome_baselines.sh 0` | Evaluates the earlier answers again with days allowed to end away from home | `noendhome/` |
+| `bash scripts/run_v2_seqboost.sh` | SeqBoost: sequence weight 1.64 and trip-distance weight 1.04, both Students retrained | `seqboost/` |
+| `bash scripts/run_v2_round2seq.sh` | Round 2 from SeqBoost with three Student1 answers per person | `round2seq/` |
+| `bash scripts/run_v2_round2bal.sh` | The same round 2 with lower distribution weights | `round2bal/` |
+| `bash scripts/run_v2_s1_multiseed.sh` | Two more Student1 validation answers per person for four models | `s1_multiseed/` |
+| `bash scripts/run_v2ctx.sh` | Students also read household, student and work-status attributes | `v2ctx/` |
+| `bash scripts/run_v2ctxt.sh` | The same, with SFT targets from a Teacher that also saw those attributes | `v2ctxt/` |
 
-### Step 13. Optional experiments
+Notes:
 
-Run these after step 12; each writes to its own folder under `$V2` and only reads
-the round-1 results.
+- 3.7% of the ground-truth days end away from home. From `run_v2_tripdist.sh` on,
+  and in the evaluation configs, such days are accepted (`require_end_home: false`).
+- The two sweep scripts take a weight and a GPU. `SPLITS="test validation"` adds the
+  test split.
+- Run `python scripts/build_context_v2.py` once before the two context pipelines.
+  Both stop before GRPO unless started with `RUN_GRPO=1`, so the SFT result can be
+  checked first.
+- The scoring script for `s1_multiseed/` is not in the repository yet.
 
-```bash
-bash scripts/run_v2_round2.sh                 # second GRPO round                     -> $V2/round2/
-bash scripts/run_v2_distmode.sh               # distance-conditioned trip-mode reward -> $V2/distmode/
-bash scripts/run_v2_distmode_weight.sh 0.94 0 # trip-mode weight 0.94 on GPU 0        -> $V2/distmode_w0.94/
-bash scripts/run_v2_tripdist.sh 1.04 0        # trip-distance weight 1.04 on GPU 0    -> $V2/tripdist_w1.04/
-```
+## Reading the results
 
-`run_v2_round2.sh`, `run_v2_distmode_weight.sh` and `run_v2_tripdist.sh` generate
-their train config in `configs/` on first use. Each ends with paired bootstrap
-comparisons (`bootstrap_*.json`) and distribution figures against the earlier
-populations. The two sweep scripts (`run_v2_distmode_weight.sh`, `run_v2_tripdist.sh`)
-retrain only Student2 and evaluate on the validation split; run them with
-`SPLITS="test validation"` to include the held-out test split. `run_v2_tripdist.sh`
-compares against the trip-mode weight 0.94, so run that sweep first.
-
-### Step 14. SeqBoost and round 2
-
-These four pipelines build on each other and on step 13
-(`run_v2_distmode_weight.sh 0.94`, a comparison baseline). They need GPUs 0 and 1
-and evaluate on the validation split only; the test split is left for the final
-configuration.
-
-```bash
-bash scripts/run_v2_noendhome_baselines.sh 0  # baselines under the current environment -> $V2/noendhome/
-bash scripts/run_v2_seqboost.sh               # SeqBoost                                -> $V2/seqboost/
-bash scripts/run_v2_round2seq.sh              # round 2 from SeqBoost                   -> $V2/round2seq/
-bash scripts/run_v2_round2bal.sh              # round 2 with lower distribution weights -> $V2/round2bal/
-```
-
-| Pipeline | What it does |
-|---|---|
-| `run_v2_noendhome_baselines.sh` | Rolls out, refines and evaluates the Pre-RL, Round 1 and trip-mode 0.94 validation answers again with `require_end_home: false`. The Student answers are reused. The later pipelines compare against these files. |
-| `run_v2_seqboost.sh` | Rolls out again the round-1 train rollouts that were rejected for ending away from home, then retrains both Students from the SFT adapters with sequence weight 1.64 and trip-distance weight 1.04. |
-| `run_v2_round2seq.sh` | New train rollouts from the SeqBoost adapters (three Student1 answers per person, two Student2 answers each), then a GRPO round that starts from, and is regularized towards, those adapters. First-departure weight 0.86. |
-| `run_v2_round2bal.sh` | The same round 2 on the same rollouts with lower distribution weights (sequence 1.20, trip mode 0.80, first departure 0.60), rescored by `prepare_policy_updates.py --rescore`. |
-
-The three training pipelines write the same layout as round 1 into their own folder:
-`grpo/student{1,2}/final`, `post_rl_validation/`, and `analysis/` with `metrics.json`,
-the paired bootstraps and the figures. `noendhome/` holds
-`<name>_validation/{rollouts_initial,rollouts}.jsonl` and `analysis/<name>_validation/`
-for `pre_rl`, `round1` and `distmode_w0.94`. The reasons for the weights are written
-next to them in the configs.
-The two round-2 configs read the SeqBoost adapters from
-`${OUTPUT_ROOT}/v2/seqboost/grpo`, so these pipelines expect the default `V2_ROOT`.
-
-`bash scripts/run_v2_s1_multiseed.sh` then writes two more Student1 validation answers
-per person (seeds 43 and 44) for Pre-RL, SeqBoost, round2seq and round2bal to
-`$V2/s1_multiseed/`. With the seed-42 answers they are three samples per person for
-per-person proper scoring rules; the scoring script is not in the repository yet.
-
-### Step 15. Household, student and work context
-
-The v2 Students read gender, age, occupation, driving ability and residence. These
-two pipelines add survey attributes of the kind a synthetic population carries:
-household size and composition, housing type, income band, number of cars, school
-level, and whether the person has a fixed workplace. Workplace and school locations
-and answers about the survey day are left out on purpose; the docstring of
-`scripts/build_context_v2.py` lists them. Rewards and weights are those of SeqBoost,
-and evaluation is on the validation split only.
-
-```bash
-python scripts/build_context_v2.py          # processed_v2 + context -> $DATA_HOME/tripchain_1030/processed_v2ctx/
-bash scripts/run_v2ctx.sh                   # SFT, train rollouts, context Pre-RL validation -> $V2/v2ctx/
-RUN_GRPO=1 bash scripts/run_v2ctx.sh        # GRPO and post-RL validation (finished steps are skipped)
-bash scripts/run_v2ctxt.sh                  # context Teacher, SFT data, SFT, rollouts, Pre-RL -> $V2/v2ctxt/
-RUN_GRPO=1 bash scripts/run_v2ctxt.sh       # GRPO and post-RL validation
-```
-
-| Pipeline | What it does |
-|---|---|
-| `run_v2ctx.sh` | Trains both Students on the v2 SFT examples with the context added to the user message. The targets are unchanged, so they were written by a Teacher that never saw the context. |
-| `run_v2ctxt.sh` | First runs the Teacher again on all 21,227 train and validation people with the context in its prompt and one added rule (the personas must agree with the listed facts), then builds `processed_v2ctxt/sft` from those labels and continues as `run_v2ctx.sh`. |
-
-Both stop before GRPO unless `RUN_GRPO=1`, so the context Pre-RL can be compared
-with Pre-RL before spending the GRPO time. They need GPUs 0 and 1, a running
-GraphHopper, and the step-14 results they compare against (`$V2/noendhome`,
-`$V2/seqboost`); `run_v2ctxt.sh` also reads the `run_v2ctx.sh` Pre-RL rollouts.
-`scripts/teacher_ctx.py` changes the Teacher prompt in memory, so the step-2 Teacher
-stays as it is; `python scripts/teacher_ctx.py --show-prompt <person_id>`
-prints the prompt one person gets. `build_sft_v2ctxt.py` stops if a user message
-differs from `processed_v2ctx/sft` in anything but the Teacher text Student2 reads.
-
-### Running individual steps by hand
-
-Every pipeline step is an ordinary command; for example, a single GRPO update:
-
-```bash
-python scripts/prepare_policy_updates.py $V2/grpo_train/s1_seed*/s2_sample*/rollouts.jsonl \
-  --output-dir $V2/grpo_train/updates --config configs/framework_grpo_train_v2.yaml --rescore
-CUDA_VISIBLE_DEVICES=0 python scripts/train_group_relative.py \
-  --updates $V2/grpo_train/updates/student2_updates.jsonl \
-  --adapter $OUTPUT_HOME/tripchain_1030/runs/student2_v2_sft/final --output $V2/grpo/student2 \
-  --epochs 1.0 --max-steps -1 --learning-rate 1e-5 --reference-penalty 0.02 --batch-size 2 --grad-accum 16
-```
-
-`--max-steps` defaults to 2 (a smoke test); `-1` trains for `--epochs`. Run any
-script with `--help` for its options.
-
-## 6. Reading the results
-
-`metrics.json` (from `scripts/evaluate_population.py`) reports three levels:
+`metrics.json` from `scripts/evaluate_population.py`:
 
 | Key | Meaning |
 |---|---|
-| `activity_sequence_exact_accuracy`, `activity_sequence_lcs_f1_mean` | individual: activity sequence |
-| `location_dong_exact_on_lcs`, `dwell_within_30_min`, `trip_mode_accuracy_on_lcs` | individual: decisions on LCS-matched activities |
-| `feasible_rate`, `feasible_rate_within_poi_coverage`, `status_counts` | environment: hard feasibility |
-| `mode_fallback_legs`, `selected_leg_mode_share` | environment: realized trip modes |
-| `distribution.population`, `distribution.subgroup_mean` | JSD against the ground truth for the whole population and averaged over occupation, age and gender groups (lower is better) |
-
-Rollouts, GRPO update files and figures are byte-for-byte reproducible from the
-same inputs. Evaluation and bootstrap numbers are reproducible up to floating-point
-rounding (about 1e-16), and the order of a few keys in `metrics.json` can change
-between runs, because Python varies the iteration order of string sets per
-process; set `PYTHONHASHSEED=0` to get byte-identical files.
+| `activity_sequence_exact_accuracy`, `activity_sequence_lcs_f1_mean` | activity sequence, per person |
+| `location_dong_exact_on_lcs`, `dwell_within_30_min`, `trip_mode_accuracy_on_lcs` | decisions on matched activities, per person |
+| `feasible_rate`, `status_counts` | feasibility in the environment |
+| `distribution.population`, `distribution.subgroup_mean` | Jensen-Shannon divergence from the ground truth; lower is better |
 
 A rollout row has `status` `ok`, `infeasible`, `outside_poi_coverage` or `failed`
-(the routing server did not answer; such rows are retried on `--resume`).
+(the routing server did not answer; such rows are retried with `--resume`).
 `scripts/bootstrap_pair.py` gives a 95% interval for the difference between two
-populations on the same people, and `scripts/visualize_population.py` draws the
-distributions (activity by hour, modes, activity counts, sequence patterns, dwell,
-location scope, reward components, and optionally text similarity and sentiment).
+populations, and `scripts/visualize_population.py` draws the distributions.
 
-## 7. Configuration reference
-
-Framework configs (`configs/framework_*.yaml`):
-
-| Section | Main keys |
-|---|---|
-| `paths` | `test_demographics` (the people to generate for; the train file in the GRPO config), `ground_truth_reference`, `student1_adapter`, `student2_adapter`, `location_whitelist`, `location_lookup_source`, `indexed_poi_catalog`, `model_cache` |
-| `inference` | `base_model`, `temperature`, `top_p`, `seed`, `output_order` (must match how the adapters were trained), `student2_resample_attempts`, `student1_repair_rounds` |
-| `poi_sampling` | `master_pool_size`, `active_pool_size`, `seed` |
-| `graphhopper` | `base_url`, `service_date`, `modes`, `bike_walk_speedup` |
-| `scheduling` | `day_minutes`, `final_home_residual` (the last stay of the day, of any type, lasts until the day ends) |
-| `activity_constraints` | `require_start_home`, `require_end_home` |
-| `optimization` | state pruning limits, selection temperature and seed, `mode_fallback_penalty` |
-| `rewards` | `weights`, tolerances, `future_discount`, `feasibility` penalties, and in train configs `distribution` (weights `sequence`, `trip_mode`, `first_departure`, `trip_distance`; smoothing, clip, `trip_mode_cells`) |
-
-## 8. Development
+## Development
 
 ```bash
-python -m pytest -q          # unit tests
-ruff check . && ruff format --check tripchain scripts tests
+python -m pytest -q
+ruff check . && ruff format --check .
 ```
 
-The tests need neither a GPU, the data, nor GraphHopper.
+The KTDB preprocessing, the Teacher and the SFT trainers come from the earlier
+`tripchain_1015` project (commit `637b7b0`); only their imports and paths were adapted.
