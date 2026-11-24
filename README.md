@@ -216,8 +216,11 @@ Notes:
 | `results/v2/<run>/analysis/` | `metrics.json`, paired bootstraps, comparison tables and figures of every run |
 | `results/v2/<run>/*_validation/` | Validation answers of both Students and the final rollouts, gzipped (`student1.jsonl.gz`, `student2.jsonl.gz`, `rollouts.jsonl.gz`) |
 
-`<run>` is the folder name under `$V2`; the round-1 files sit directly in
-`results/v2/`. The context-Teacher run (`v2ctxt`) has only its Pre-RL results so far.
+`<run>` is the folder name under `$V2`. Only results from the current environment,
+where a day may end away from home, are included. For Pre-RL, round 1 and trip-mode
+weight 0.94 these are the re-evaluated files in `noendhome/`; the earlier results of
+those runs, made while every day had to end at home, were removed.
+The context-Teacher run (`v2ctxt`) has only its Pre-RL results so far.
 Adapters, train rollouts and the test-split rollouts are not included.
 
 To skip tutorial step 1, copy the dataset to where the code reads it:
