@@ -1,0 +1,95 @@
+{
+  "people": 2653,
+  "models": {
+    "Ground truth": {
+      "patterns": 476,
+      "entropy_bits": 5.564,
+      "home_work_home": 0.2303,
+      "unseen_in_train": 0.072
+    },
+    "Mode (train ground truth)": {
+      "exact": 0.3705,
+      "brier": 1.259,
+      "log_score": -8.3406
+    },
+    "Calibrated (train ground truth)": {
+      "exact": 0.1722,
+      "brier": 0.836,
+      "log_score": -4.4827
+    },
+    "Pre-RL": {
+      "samples_per_person": 3,
+      "exact": 0.2456,
+      "same_pattern": 0.3722,
+      "brier": 0.8809,
+      "log_score": -4.7387,
+      "patterns": 225,
+      "entropy_bits": 4.1449,
+      "home_work_home": 0.3509,
+      "unseen_in_train": 0.018,
+      "brier_minus_Person-centered GRPO": [
+        0.0254,
+        0.0054,
+        0.0454
+      ],
+      "log_score_minus_Person-centered GRPO": [
+        -0.0455,
+        -0.1035,
+        0.0125
+      ]
+    },
+    "SeqBoost": {
+      "samples_per_person": 3,
+      "exact": 0.247,
+      "same_pattern": 0.3562,
+      "brier": 0.8622,
+      "log_score": -4.6652,
+      "patterns": 280,
+      "entropy_bits": 4.2566,
+      "home_work_home": 0.3445,
+      "unseen_in_train": 0.0268,
+      "brier_minus_Person-centered GRPO": [
+        0.0067,
+        -0.015,
+        0.0283
+      ],
+      "log_score_minus_Person-centered GRPO": [
+        0.0279,
+        -0.0352,
+        0.0911
+      ]
+    },
+    "Person-centered GRPO": {
+      "samples_per_person": 3,
+      "exact": 0.2504,
+      "same_pattern": 0.3563,
+      "brier": 0.8555,
+      "log_score": -4.6931,
+      "patterns": 256,
+      "entropy_bits": 4.2697,
+      "home_work_home": 0.3392,
+      "unseen_in_train": 0.0299
+    },
+    "Cell-centered GRPO": {
+      "samples_per_person": 3,
+      "exact": 0.2206,
+      "same_pattern": 0.2769,
+      "brier": 0.8357,
+      "log_score": -4.6208,
+      "patterns": 302,
+      "entropy_bits": 4.6634,
+      "home_work_home": 0.268,
+      "unseen_in_train": 0.0351,
+      "brier_minus_Person-centered GRPO": [
+        -0.0199,
+        -0.0402,
+        0.0005
+      ],
+      "log_score_minus_Person-centered GRPO": [
+        0.0724,
+        0.0131,
+        0.1317
+      ]
+    }
+  }
+}
