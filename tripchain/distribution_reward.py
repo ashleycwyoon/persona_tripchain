@@ -24,6 +24,26 @@ With self-inclusion, a rare (e.g. long, many-activity) pattern seen once in a
 cell gets Q >= 1/n and an almost always negative reward even when the policy
 under-generates that whole class of days.
 
+Q usually has more samples than P (two Student1 outputs and four rollouts per
+train person against one observed day). With the same prior strength and root
+floor, Q is then smoothed less than P: for a value that neither side has in a
+cell, P/Q is about (n_Q + prior) / (n_P + prior) at every level, up to 2 per
+level for the sequences. On the v2 train rollouts a sequence that never occurs
+in the train ground truth got +1.42 on average, -0.50 with one sample per
+person. `balanced=True` (rewards.distribution.balanced_smoothing) multiplies
+Q's prior strength and root floor by n_Q / n_P, so both sides are smoothed by
+the same number of people.
+
+Activity count (activity_count_rewards, Student1) uses the same reward on the number
+of activities of the day (1 ... 9+, as scripts/evaluate_population.py counts them), in
+the same demographic cells as the sequence. The sequence reward compares exact
+sequences, and the long tail of rare sequences is too sparse for that: on the v2 train
+rollouts the sequences outside the 12 most generated ones are 36% of the ground truth
+and 21% of the generated days (log ratio +0.55), but their mean sequence reward is
++0.07, and below the cell mean once Q is smoothed like P. The count has few values, so
+its cells are well estimated: 3 activities 54.5% generated vs 41.0%, 6 or more 3.5% vs
+10.3%. A long day then gets the signal whether or not its exact sequence was observed.
+
 First departure (build_departure_rewards) uses the same reward on the hour the
 person first leaves home, within cells that also carry the first out-of-home
 activity (work leaves at 8, shopping at 13): (purpose x occupation x age x
@@ -55,7 +75,7 @@ import math
 from collections import Counter, defaultdict
 from typing import Any, Iterable
 
-from .population_metrics import age_bucket
+from .population_metrics import MAX_COUNT, age_bucket
 
 # Finest cell first; each level is backed off to the next one.
 LEVELS = (
@@ -182,8 +202,40 @@ def log_ratio(
     return max(-clip, min(clip, ratio))
 
 
+def policy_scale(policy_items: int, truth_items: int, balanced: bool) -> float:
+    """Factor on Q's prior strength and root floor: n_Q / n_P when balanced, else 1."""
+    return policy_items / truth_items if balanced and policy_items and truth_items else 1.0
+
+
 def sequence_key(sequence: list[str]) -> str:
     return "-".join(sequence)
+
+
+def activity_count_bucket(sequence: list[str]) -> str:
+    """Number of activities of a day, capped as in the activity-count metric."""
+    return str(min(len(sequence), MAX_COUNT))
+
+
+def activity_count_rewards(
+    branches: list[tuple[dict[str, Any], list[str]]],
+    truth: list[tuple],
+    prior_strength: float,
+    clip: float,
+    balanced: bool = False,
+) -> list[float]:
+    """Activity-count reward per Student1 branch, in the demographic cells of the sequence reward.
+
+    branches: (demographics, activity_sequence) of each generated Student1 output.
+    truth:    (demographics, activity_sequence, ...) of the train ground truth.
+    Q for each branch is counted without that branch.
+    """
+    true_counts = [(demo, activity_count_bucket(seq)) for demo, seq, *_ in truth]
+    policy_counts = [(demo, activity_count_bucket(seq)) for demo, seq in branches]
+    vocabulary = {str(count) for count in range(1, MAX_COUNT + 1)}
+    scale = policy_scale(len(policy_counts), len(true_counts), balanced)
+    p = CellDistribution(true_counts, vocabulary, prior_strength)
+    q = CellDistribution(policy_counts, vocabulary, prior_strength * scale, 0.5 * scale)
+    return [log_ratio(p, q, demo, value, clip, Counter([value])) for demo, value in policy_counts]
 
 
 def build_distribution_rewards(
@@ -193,6 +245,7 @@ def build_distribution_rewards(
     prior_strength: float,
     clip: float,
     mode_prior_strength: float | None = None,
+    balanced: bool = False,
 ) -> tuple[list[float], list[float]]:
     """Sequence reward per Student1 branch and mean trip-mode reward per rollout.
 
@@ -209,20 +262,22 @@ def build_distribution_rewards(
     policy_sequences = [(demo, sequence_key(seq)) for demo, seq in branches]
     vocabulary = {value for _, value in true_sequences} | {value for _, value in policy_sequences}
     p_sequence = CellDistribution(true_sequences, vocabulary, prior_strength)
-    q_sequence = CellDistribution(policy_sequences, vocabulary, prior_strength)
+    scale = policy_scale(len(policy_sequences), len(true_sequences), balanced)
+    q_sequence = CellDistribution(policy_sequences, vocabulary, prior_strength * scale, 0.5 * scale)
     sequence_rewards = [
         log_ratio(p_sequence, q_sequence, demo, value, clip, Counter([value])) for demo, value in policy_sequences
     ]
 
     if distance:
         return sequence_rewards, distance_mode_rewards(
-            rollouts, truth, prior_strength if mode_prior_strength is None else mode_prior_strength, clip
+            rollouts, truth, prior_strength if mode_prior_strength is None else mode_prior_strength, clip, balanced
         )
     true_modes = [(demo, mode) for demo, _, modes, *_ in truth for mode in modes]
     policy_modes = [(demo, mode) for demo, modes, *_ in rollouts for mode in modes]
     vocabulary = {mode for _, mode in true_modes} | {mode for _, mode in policy_modes}
     p_mode = CellDistribution(true_modes, vocabulary, prior_strength)
-    q_mode = CellDistribution(policy_modes, vocabulary, prior_strength)
+    scale = policy_scale(len(policy_modes), len(true_modes), balanced)
+    q_mode = CellDistribution(policy_modes, vocabulary, prior_strength * scale, 0.5 * scale)
     mode_rewards = []
     for demo, modes, *_ in rollouts:
         own = Counter(modes)
@@ -232,7 +287,9 @@ def build_distribution_rewards(
     return sequence_rewards, mode_rewards
 
 
-def distance_mode_rewards(rollouts: list[tuple], truth: list[tuple], prior_strength: float, clip: float) -> list[float]:
+def distance_mode_rewards(
+    rollouts: list[tuple], truth: list[tuple], prior_strength: float, clip: float, balanced: bool = False
+) -> list[float]:
     """Mean per-trip mode reward in (distance band x demographic) cells.
 
     A trip without a band (more modes than locations) is skipped."""
@@ -244,9 +301,9 @@ def distance_mode_rewards(rollouts: list[tuple], truth: list[tuple], prior_stren
     policy = [items(demo, modes, bands) for demo, modes, bands in rollouts]
     vocabulary = {mode for _, mode in true_items} | {mode for own in policy for _, mode in own}
     p = CellDistribution(true_items, vocabulary, prior_strength, levels=MODE_DISTANCE_LEVELS)
-    q = CellDistribution(
-        [item for own in policy for item in own], vocabulary, prior_strength, levels=MODE_DISTANCE_LEVELS
-    )
+    policy_items = [item for own in policy for item in own]
+    scale = policy_scale(len(policy_items), len(true_items), balanced)
+    q = CellDistribution(policy_items, vocabulary, prior_strength * scale, 0.5 * scale, levels=MODE_DISTANCE_LEVELS)
     rewards = []
     for own in policy:
         if not own:
@@ -261,7 +318,9 @@ def distance_mode_rewards(rollouts: list[tuple], truth: list[tuple], prior_stren
     return rewards
 
 
-def distance_band_rewards(rollouts: list[tuple], truth: list[tuple], prior_strength: float, clip: float) -> list[float]:
+def distance_band_rewards(
+    rollouts: list[tuple], truth: list[tuple], prior_strength: float, clip: float, balanced: bool = False
+) -> list[float]:
     """Mean per-trip distance-band reward in (trip purpose x demographic) cells.
 
     rollouts / truth: (demographics, trip purposes, trip bands); a trip's purpose is
@@ -275,7 +334,9 @@ def distance_band_rewards(rollouts: list[tuple], truth: list[tuple], prior_stren
     policy = [items(demo, purposes, bands) for demo, purposes, bands in rollouts]
     vocabulary = {band for _, band in true_items} | {band for own in policy for _, band in own}
     p = CellDistribution(true_items, vocabulary, prior_strength, levels=DISTANCE_LEVELS)
-    q = CellDistribution([item for own in policy for item in own], vocabulary, prior_strength, levels=DISTANCE_LEVELS)
+    policy_items = [item for own in policy for item in own]
+    scale = policy_scale(len(policy_items), len(true_items), balanced)
+    q = CellDistribution(policy_items, vocabulary, prior_strength * scale, 0.5 * scale, levels=DISTANCE_LEVELS)
     rewards = []
     for own in policy:
         if not own:
@@ -304,6 +365,7 @@ def build_departure_rewards(
     truth: list[tuple[dict[str, Any], str, str]],
     prior_strength: float,
     clip: float,
+    balanced: bool = False,
 ) -> list[float]:
     """First-departure reward per rollout (0 for a rollout without one).
 
@@ -314,11 +376,9 @@ def build_departure_rewards(
     """
     vocabulary = {str(hour) for hour in range(DEPARTURE_HOURS)}
     p = CellDistribution([(demo, hour, purpose) for demo, purpose, hour in truth], vocabulary, prior_strength)
-    q = CellDistribution(
-        [(demo, hour, purpose) for item in rollouts if item for demo, purpose, hour in [item]],
-        vocabulary,
-        prior_strength,
-    )
+    policy_items = [(demo, hour, purpose) for item in rollouts if item for demo, purpose, hour in [item]]
+    scale = policy_scale(len(policy_items), len(truth), balanced)
+    q = CellDistribution(policy_items, vocabulary, prior_strength * scale, 0.5 * scale)
     rewards = []
     for item in rollouts:
         if item is None:

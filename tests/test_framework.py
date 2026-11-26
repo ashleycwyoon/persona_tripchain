@@ -672,6 +672,44 @@ def test_location_and_dwell_rewards_align_activities_like_evaluation():
     # All three matched activities are correct; the extra activity scores 0.
     assert location_reward(predicted_sequence, target_sequence, predicted, target) == 3 / 4
     assert dwell_reward(predicted_sequence, target_sequence, predicted, target, 120) == 3 / 4
+    # rewards.matched_denominator: only the matched activities are scored, so the extra one costs nothing here.
+    assert location_reward(predicted_sequence, target_sequence, predicted, target, matched=True) == 1.0
+    assert dwell_reward(predicted_sequence, target_sequence, predicted, target, 120, matched=True) == 1.0
+
+
+def test_matched_denominator_counts_a_sequence_difference_only_in_the_activity_reward():
+    from tripchain.rewards import score_rollout, trip_mode_reward
+
+    def item(dong, dwell):
+        return {"location": {"gu": "Mapo-gu", "administrative_dong_name": dong}, "dwell_time_min": dwell}
+
+    target = {
+        "activity_sequence": ["home", "work", "home"],
+        "activities": [item("a", 600), item("b", 480), item("a", 300)],
+        "trip_modes": ["bus", "bus"],
+    }
+    policy = {
+        "activity_sequence": ["home", "work", "shopping", "home"],
+        "location_dwell_by_activity": [item("a", 600), item("b", 480), item("c", 30), item("a", 300)],
+        "trip_modes": ["bus", "walk", "bus"],
+    }
+    config = {
+        "rewards": {
+            "weights": {"activity": 1.0, "location": 1.0, "dwell": 1.0, "trip_mode": 0.5, "feasibility": 1.5},
+            "future_discount": 0.95,
+            "dwell_tolerance_min": 120,
+            "feasibility": {},
+        }
+    }
+    longest = score_rollout(policy, target, {"status": "outside_poi_coverage"}, config)["components"]
+    config["rewards"]["matched_denominator"] = True
+    matched = score_rollout(policy, target, {"status": "outside_poi_coverage"}, config)["components"]
+    assert longest["activity"] == matched["activity"] == pytest.approx(6 / 7)
+    assert (longest["location"], longest["dwell"], longest["trip_mode"]) == (3 / 4, 3 / 4, 2 / 3)
+    assert (matched["location"], matched["dwell"], matched["trip_mode"]) == (1.0, 1.0, 1.0)
+    # No matched trip scores 0, and a day without trips on both sides still scores 1.
+    assert trip_mode_reward(["home"], ["home", "work", "home"], [], ["bus", "bus"], matched=True) == 0.0
+    assert trip_mode_reward(["home"], ["home"], [], [], matched=True) == 1.0
 
 
 def test_two_level_groups_compare_student2_within_one_student1_output(tmp_path):
@@ -1145,3 +1183,33 @@ def test_distance_band_reward_moves_far_work_trips_closer():
     shop = (demo, ["shopping", "home"], ["10km+", "10km+"])
     r = distance_band_rewards([near, far] * 5 + [shop] * 10, shop_truth, prior_strength=1.0, clip=3.0)
     assert r[-1] > r[1]
+
+
+def test_activity_count_reward_rewards_the_undergenerated_length_for_any_sequence():
+    from tripchain.distribution_reward import activity_count_rewards
+
+    demo = {"occupation": "office_worker", "age": 30, "gender": "female"}
+    long_day = ["home", "work", "eat_out", "work", "home"]
+    truth = [(demo, ["home", "work", "home"], [])] * 5 + [(demo, long_day, [])] * 5
+    # The policy generates the 3-activity day 9 times in 10; its only long day is a sequence the truth never has.
+    unseen_long = ["home", "leisure", "shopping", "leisure", "home"]
+    branches = [(demo, ["home", "work", "home"])] * 9 + [(demo, unseen_long)]
+    rewards = activity_count_rewards(branches, truth, prior_strength=1.0, clip=3.0)
+    assert all(value < 0 for value in rewards[:9])
+    assert rewards[9] > 0
+    from tripchain.distribution_reward import activity_count_bucket
+
+    assert activity_count_bucket(["a"] * 9) == activity_count_bucket(["a"] * 12) == "9"
+
+
+def test_balanced_smoothing_does_not_reward_a_value_neither_side_has():
+    from tripchain.distribution_reward import build_distribution_rewards
+
+    demo = {"occupation": "office_worker", "age": 30, "gender": "female"}
+    truth = [(demo, ["home", "work", "home"], [])] * 50
+    # Two generated samples per person; one branch is a sequence the truth does not have.
+    branches = [(demo, ["home", "work", "home"])] * 99 + [(demo, ["home", "leisure", "home"])]
+    plain, _ = build_distribution_rewards(branches, [], truth, prior_strength=20.0, clip=3.0)
+    balanced, _ = build_distribution_rewards(branches, [], truth, prior_strength=20.0, clip=3.0, balanced=True)
+    assert plain[-1] > 0.5
+    assert abs(balanced[-1]) < 0.05

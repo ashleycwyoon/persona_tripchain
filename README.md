@@ -44,8 +44,16 @@ within the day. Days with an activity outside Seoul are set aside as
 **Rewards.** Individual rewards compare a generated day with that person's own
 ground truth: activity sequence, location, dwell, trip mode, feasibility and start
 time. Distribution rewards compare the generated population with the train ground
-truth among similar people (occupation, age group, gender): sequence pattern for
-Student1; trip mode, first departure and, optionally, trip distance for Student2.
+truth among similar people (occupation, age group, gender): sequence pattern and,
+optionally, the number of activities for Student1; trip mode, first departure and,
+optionally, trip distance for Student2. In the advantage, the individual rewards are
+compared among one person's answers and the distribution rewards among the answers of
+the same demographic cell. Two options change how they are computed:
+`rewards.matched_denominator` divides location, dwell, trip mode and start time by the
+activities matched with the ground truth instead of the longer sequence, so a sequence
+difference is counted once; `rewards.distribution.balanced_smoothing` smooths the
+generated distribution by as many people as the ground-truth one, so a sequence that
+the train ground truth never has is no longer rewarded.
 The weights are in `configs/framework_grpo_train_*.yaml`, with the reason for each
 value written next to it.
 
@@ -197,6 +205,10 @@ results of earlier ones. All of them evaluate on the validation split.
 | `bash scripts/run_v2ctx.sh` | Students also read household, student and work-status attributes | `v2ctx/` |
 | `bash scripts/run_v2ctxt.sh` | The same, with SFT targets from a Teacher that also saw those attributes | `v2ctxt/` |
 | `bash scripts/run_v2ctxt_s1cell.sh` | Student1 GRPO of that run repeated with the distribution rewards centered within the demographic cell (existing train rollouts are re-scored); scored with `scripts/score_sequences.py` | `v2ctxt_s1cell/` |
+| `NAME=v2ctxt_s1cell_w0.53 TRAIN_CFG=configs/framework_grpo_train_v2ctxt_s1w0.53.yaml bash scripts/run_v2ctxt_s1cell.sh` | The same with sequence weight 0.53 (individual : distribution = 50:50) | `v2ctxt_s1cell_w0.53/` |
+| `NAME=v2ctxt_s1count TRAIN_CFG=configs/framework_grpo_train_v2ctxt_s1count.yaml LABEL="Activity-count reward Student1" bash scripts/run_v2ctxt_s1cell.sh` | The same with the matched denominator, balanced smoothing and the activity-count distribution reward (sequence 0.32, activity count 0.66; 50:50) | `v2ctxt_s1count/` |
+| `bash scripts/run_v2ctxt_s2cell.sh` | Student2 GRPO of the `v2ctxt` run repeated with cell-centered distribution rewards at 50:50 (trip mode 0.25, first departure 0.24, trip distance 0.40) | `v2ctxt_s2cell/` |
+| `NAME=v2ctxt_s1count_s2cell S1_RUN=v2ctxt_s1count bash scripts/run_v2ctxt_s2cell.sh` | No training: the Student2 of `v2ctxt_s2cell` evaluated on the Student1 answers of `v2ctxt_s1count` | `v2ctxt_s1count_s2cell/` |
 
 Notes:
 
@@ -221,10 +233,12 @@ Notes:
 where a day may end away from home, are included. For Pre-RL, round 1 and trip-mode
 weight 0.94 these are the re-evaluated files in `noendhome/`; the earlier results of
 those runs, made while every day had to end at home, were removed.
-`v2ctxt_s1cell` is the only run trained with the distribution rewards centered within
-the demographic cell, which is what `scripts/prepare_policy_updates.py` does now (see its
-docstring). The other GRPO results were trained while they were centered within each
-person, so rerunning those pipelines gives different update files.
+`v2ctxt_s1cell` and the runs listed after it in the table above were trained with the
+distribution rewards centered within the demographic cell, which is what
+`scripts/prepare_policy_updates.py` does now (see its docstring). The earlier GRPO
+results were trained while they were centered within each person, so rerunning those
+pipelines gives different update files. Of the cell-centered runs, the results of
+`v2ctxt_s1cell`, `v2ctxt_s1count` and `v2ctxt_s1count_s2cell` are included.
 Adapters, train rollouts and the test-split rollouts are not included.
 
 To skip tutorial step 1, copy the dataset to where the code reads it:

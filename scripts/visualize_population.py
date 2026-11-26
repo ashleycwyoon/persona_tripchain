@@ -19,6 +19,9 @@ Text analysis (Student1 persona/reasoning1, Student2 reasoning2; skipped with
 - sentiment (3-class RoBERTa), compared with the teacher texts of the SFT
   validation split (the test split has no teacher persona/reasoning).
 
+Within one figure, panels that show the same kind of value (same y label, or all
+shares) use one y range, so bar heights compare across panels.
+
 Writes numbered figures and summary.json to --output.
 """
 
@@ -204,7 +207,21 @@ def teacher_texts(sft_dir: Path) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- figures
+def unify_y(fig):
+    """Give the panels of one figure the same y range when they show the same kind of value:
+    the same y label, or all of them a share ("share of ..."). Other figures are left alone."""
+    axes = [ax for ax in fig.axes if ax.has_data()]
+    labels = {ax.get_ylabel() for ax in axes}
+    if len(axes) < 2 or not (len(labels) == 1 or all(label.startswith("share of") for label in labels)):
+        return
+    low = min(ax.get_ylim()[0] for ax in axes)
+    high = max(ax.get_ylim()[1] for ax in axes)
+    for ax in axes:
+        ax.set_ylim(low, high)
+
+
 def save(fig, path: Path):
+    unify_y(fig)
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)

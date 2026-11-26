@@ -4,6 +4,14 @@ Components: Activity (sequence overlap), Location (administrative dong),
 Dwell, Trip mode (or the person-level mode ranking), Feasibility and Start
 time. Location, dwell, trip mode and start time compare LCS-matched activities;
 unmatched activities score 0.
+
+By default these four divide by the longer of the two sequences, so a sequence
+that differs from the ground truth loses in each of them again, on top of the
+Activity reward (v2 train rollouts: a sample 0.25 ahead in Activity was 1.12
+ahead in the Student1 return). With `rewards.matched_denominator: true` they
+divide by the number of matched activities (trips) instead: each then scores
+only its own decision on the activities both sides have, and the sequence
+difference is counted once, by the Activity reward. Nothing matched scores 0.
 """
 
 from __future__ import annotations
@@ -42,6 +50,12 @@ def activity_reward(predicted: list[str], target: list[str]) -> float:
     if not predicted or not target:
         return 0.0
     return 2.0 * len(lcs_pairs(predicted, target)) / (len(predicted) + len(target))
+
+
+def _share(total: float, matched_count: int, longest: int, matched: bool) -> float:
+    """total / matched pairs (matched) or / the longer side (default); 0 when there is nothing to divide by."""
+    denominator = matched_count if matched else longest
+    return total / denominator if denominator > 0 else 0.0
 
 
 def _location_parts(location: dict[str, Any]) -> tuple[str, str]:
@@ -99,6 +113,7 @@ def location_reward(
     target_sequence: list[str],
     predicted: list[dict[str, Any]],
     target: list[dict[str, Any]],
+    matched: bool = False,
 ) -> float:
     """Score locations on LCS-matched activities; unmatched activities score 0."""
     if not predicted or not target:
@@ -107,7 +122,7 @@ def location_reward(
         location_match(pitem.get("location") or {}, titem.get("location") or {})
         for pitem, titem in _aligned(predicted_sequence, target_sequence, predicted, target)
     ]
-    return sum(scores) / max(len(predicted), len(target))
+    return _share(sum(scores), len(scores), max(len(predicted), len(target)), matched)
 
 
 def dwell_reward(
@@ -117,6 +132,7 @@ def dwell_reward(
     target: list[dict[str, Any]],
     tolerance_min: float,
     final_home_residual: bool = False,
+    matched: bool = False,
 ) -> float:
     """Mean exp(-|dwell error| / tolerance) over LCS-matched activities."""
     if final_home_residual:
@@ -133,10 +149,10 @@ def dwell_reward(
         abs(float(p.get("dwell_time_min", 0)) - float(t.get("dwell_time_min", 0)))
         for p, t in _aligned(predicted_sequence, target_sequence, predicted, target)
     ]
-    # Bounded smooth reward; unmatched activities receive zero through the
+    # Bounded smooth reward; by default unmatched activities receive zero through the
     # denominator rather than letting a short prediction look artificially good.
     similarities = [math.exp(-error / max(1.0, tolerance_min)) for error in errors]
-    return sum(similarities) / max(len(predicted), len(target))
+    return _share(sum(similarities), len(similarities), max(len(predicted), len(target)), matched)
 
 
 def trip_mode_reward(
@@ -144,6 +160,7 @@ def trip_mode_reward(
     target_sequence: list[str],
     predicted_modes: list[str],
     target_modes: list[str],
+    matched: bool = False,
 ) -> float:
     """Share of trips whose main mode matches, aligned like the activities.
 
@@ -155,12 +172,12 @@ def trip_mode_reward(
         return 1.0
     if not predicted_modes or not target_modes:
         return 0.0
-    hits = sum(
+    hits = [
         predicted_modes[pi - 1] == target_modes[ti - 1]
         for pi, ti in lcs_pairs(predicted_sequence, target_sequence)
         if 0 < pi <= len(predicted_modes) and 0 < ti <= len(target_modes)
-    )
-    return hits / max(len(predicted_modes), len(target_modes))
+    ]
+    return _share(sum(hits), len(hits), max(len(predicted_modes), len(target_modes)), matched)
 
 
 def mode_preference_reward(
@@ -227,6 +244,7 @@ def start_time_reward(
     environment: dict[str, Any],
     target: list[dict[str, Any]],
     tolerance_min: float,
+    matched: bool = False,
 ) -> float:
     """Score each realized activity start against this person's own GT start.
 
@@ -247,7 +265,7 @@ def start_time_reward(
         math.exp(-abs(float(p.get("start_min", 0)) - float(t.get("start_time_min", 0))) / max(1.0, tolerance_min))
         for p, t in _aligned(predicted_sequence, target_sequence, predicted, target)
     ]
-    return sum(similarities) / max(len(predicted), len(target))
+    return _share(sum(similarities), len(similarities), max(len(predicted), len(target)), matched)
 
 
 def score_rollout(
@@ -267,9 +285,10 @@ def score_rollout(
     target_spatial = target.get("activities") or target.get("location_dwell_by_activity") or []
     predicted_sequence = policy.get("activity_sequence") or []
     target_sequence = target.get("activity_sequence") or []
+    matched = bool(config["rewards"].get("matched_denominator", False))
     components = {
         "activity": activity_reward(predicted_sequence, target_sequence),
-        "location": location_reward(predicted_sequence, target_sequence, predicted_spatial, target_spatial),
+        "location": location_reward(predicted_sequence, target_sequence, predicted_spatial, target_spatial, matched),
         "dwell": dwell_reward(
             predicted_sequence,
             target_sequence,
@@ -277,6 +296,7 @@ def score_rollout(
             target_spatial,
             float(config["rewards"]["dwell_tolerance_min"]),
             bool(config.get("scheduling", {}).get("final_home_residual", False)),
+            matched,
         ),
         "feasibility": feasibility_reward(environment, config),
     }
@@ -289,6 +309,7 @@ def score_rollout(
             target_sequence,
             policy.get("trip_modes") or [],
             target.get("trip_modes") or [],
+            matched,
         )
     else:
         components["mode_preference"] = mode_preference_reward(
@@ -301,6 +322,7 @@ def score_rollout(
             environment,
             target_spatial,
             float(config["rewards"].get("start_time_tolerance_min", 60.0)),
+            matched,
         )
     total = sum(float(weights[name]) * value for name, value in components.items())
     gamma = float(config["rewards"]["future_discount"])

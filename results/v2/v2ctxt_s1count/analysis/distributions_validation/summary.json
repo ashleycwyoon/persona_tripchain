@@ -1,0 +1,380 @@
+{
+  "people": {
+    "Ground Truth": 2653,
+    "SeqBoost": 2653,
+    "Context+Teacher Pre-RL": 2653,
+    "Person-centered GRPO": 2653,
+    "Cell-centered Student1 w1.64": 2653,
+    "Activity-count reward Student1": 2653,
+    "Teacher": 2653
+  },
+  "jsd_vs_gt": {
+    "24h_activity_profile": {
+      "Ground Truth": 0.0,
+      "SeqBoost": 0.014150181792718248,
+      "Context+Teacher Pre-RL": 0.015491818405234661,
+      "Person-centered GRPO": 0.014610731285874312,
+      "Cell-centered Student1 w1.64": 0.012040462663008978,
+      "Activity-count reward Student1": 0.011768569799338454
+    },
+    "mode_selected_legs": {
+      "SeqBoost": 0.018178188836823535,
+      "Context+Teacher Pre-RL": 0.018712156382394277,
+      "Person-centered GRPO": 0.014849275992518857,
+      "Cell-centered Student1 w1.64": 0.012491237859118456,
+      "Activity-count reward Student1": 0.019462701506640003
+    },
+    "mode_policy_output": {
+      "SeqBoost": 0.00883534884422762,
+      "Context+Teacher Pre-RL": 0.018822396583155904,
+      "Person-centered GRPO": 0.008616200055797246,
+      "Cell-centered Student1 w1.64": 0.004133512773295163,
+      "Activity-count reward Student1": 0.008363732548054986
+    },
+    "mode_top1": {
+      "SeqBoost": 0.008829702849465146,
+      "Context+Teacher Pre-RL": 0.016691278857633274,
+      "Person-centered GRPO": 0.006789667352728526,
+      "Cell-centered Student1 w1.64": 0.004212560410267222,
+      "Activity-count reward Student1": 0.0070583806328552365
+    },
+    "activity_count": {
+      "SeqBoost": 0.018733253774610985,
+      "Context+Teacher Pre-RL": 0.02757628884650247,
+      "Person-centered GRPO": 0.02039805590177085,
+      "Cell-centered Student1 w1.64": 0.010350215335036793,
+      "Activity-count reward Student1": 0.008936619533310937
+    },
+    "non_home_activity_types": {
+      "SeqBoost": 0.00837672341085259,
+      "Context+Teacher Pre-RL": 0.01501738711972624,
+      "Person-centered GRPO": 0.010340364328037418,
+      "Cell-centered Student1 w1.64": 0.006755295233996511,
+      "Activity-count reward Student1": 0.0067780573308190584
+    },
+    "activity_sequence_patterns": {
+      "SeqBoost": 0.13894122262798797,
+      "Context+Teacher Pre-RL": 0.1440963397958403,
+      "Person-centered GRPO": 0.13566463439963303,
+      "Cell-centered Student1 w1.64": 0.1373331418859866,
+      "Activity-count reward Student1": 0.13591356486986703
+    },
+    "dwell_home": {
+      "SeqBoost": 0.017055835267996682,
+      "Context+Teacher Pre-RL": 0.020716283836601436,
+      "Person-centered GRPO": 0.011816968906688305,
+      "Cell-centered Student1 w1.64": 0.012118796306849311,
+      "Activity-count reward Student1": 0.009660494932598638
+    },
+    "dwell_work": {
+      "SeqBoost": 0.07304221657793744,
+      "Context+Teacher Pre-RL": 0.07141321007188531,
+      "Person-centered GRPO": 0.06818756819344812,
+      "Cell-centered Student1 w1.64": 0.04092251775290959,
+      "Activity-count reward Student1": 0.04606169981991966
+    },
+    "dwell_school": {
+      "SeqBoost": 0.0700051349502688,
+      "Context+Teacher Pre-RL": 0.07114569533026519,
+      "Person-centered GRPO": 0.062175975792771704,
+      "Cell-centered Student1 w1.64": 0.05283950086481837,
+      "Activity-count reward Student1": 0.04674127197756993
+    },
+    "dwell_shopping": {
+      "SeqBoost": 0.034522597910253736,
+      "Context+Teacher Pre-RL": 0.02808265603493669,
+      "Person-centered GRPO": 0.025726692747812387,
+      "Cell-centered Student1 w1.64": 0.04489779276719605,
+      "Activity-count reward Student1": 0.03703942401674022
+    },
+    "dwell_eat_out": {
+      "SeqBoost": 0.027152200274550096,
+      "Context+Teacher Pre-RL": 0.04228627512627581,
+      "Person-centered GRPO": 0.05045524705112211,
+      "Cell-centered Student1 w1.64": 0.038592749120818184,
+      "Activity-count reward Student1": 0.031303019162361854
+    },
+    "dwell_leisure": {
+      "SeqBoost": 0.04454915663645369,
+      "Context+Teacher Pre-RL": 0.043785972525537634,
+      "Person-centered GRPO": 0.04464573287348871,
+      "Cell-centered Student1 w1.64": 0.04192983037846883,
+      "Activity-count reward Student1": 0.03895308181221477
+    },
+    "dwell_escort_care": {
+      "SeqBoost": 0.09111364383914614,
+      "Context+Teacher Pre-RL": 0.06851296434407461,
+      "Person-centered GRPO": 0.05795030488981793,
+      "Cell-centered Student1 w1.64": 0.10845132122841251,
+      "Activity-count reward Student1": 0.06200104889256204
+    },
+    "dwell_other": {
+      "SeqBoost": 0.1647680718968043,
+      "Context+Teacher Pre-RL": 0.2039477035609002,
+      "Person-centered GRPO": 0.13753179735617294,
+      "Cell-centered Student1 w1.64": 0.16455162057085865,
+      "Activity-count reward Student1": 0.14776988994104168
+    },
+    "first_departure_from_home": {
+      "SeqBoost": 0.03541026107396378,
+      "Context+Teacher Pre-RL": 0.03833866690354485,
+      "Person-centered GRPO": 0.027310511978738388,
+      "Cell-centered Student1 w1.64": 0.021978319257624966,
+      "Activity-count reward Student1": 0.02630270759123693
+    },
+    "final_arrival_at_home": {
+      "SeqBoost": 0.05837306831736425,
+      "Context+Teacher Pre-RL": 0.06253489946293322,
+      "Person-centered GRPO": 0.05968995883807125,
+      "Cell-centered Student1 w1.64": 0.056292696128821026,
+      "Activity-count reward Student1": 0.047687931107266275
+    },
+    "non_home_location_scope": {
+      "SeqBoost": 0.006052972401040507,
+      "Context+Teacher Pre-RL": 0.006427448879485386,
+      "Person-centered GRPO": 0.011234992668665053,
+      "Cell-centered Student1 w1.64": 0.009103408184460135,
+      "Activity-count reward Student1": 0.00887775357850449
+    }
+  },
+  "sequence_pattern_stats": {
+    "Ground Truth": {
+      "unique_patterns": 476,
+      "share_of_people_with_pattern_seen_in_gt": 1.0
+    },
+    "SeqBoost": {
+      "unique_patterns": 270,
+      "share_of_people_with_pattern_seen_in_gt": 0.9381831888428195
+    },
+    "Context+Teacher Pre-RL": {
+      "unique_patterns": 209,
+      "share_of_people_with_pattern_seen_in_gt": 0.9543912551828119
+    },
+    "Person-centered GRPO": {
+      "unique_patterns": 235,
+      "share_of_people_with_pattern_seen_in_gt": 0.9494911421032793
+    },
+    "Cell-centered Student1 w1.64": {
+      "unique_patterns": 283,
+      "share_of_people_with_pattern_seen_in_gt": 0.9336600075386355
+    },
+    "Activity-count reward Student1": {
+      "unique_patterns": 291,
+      "share_of_people_with_pattern_seen_in_gt": 0.9355446664153788
+    }
+  },
+  "text_cosine": {
+    "persona~reasoning1": {
+      "Teacher": {
+        "mean": 0.6861658096313477,
+        "median": 0.6870596408843994,
+        "shuffled_person_mean": 0.5363395810127258
+      },
+      "SeqBoost": {
+        "mean": 0.7113566398620605,
+        "median": 0.7127567529678345,
+        "shuffled_person_mean": 0.5579944849014282
+      },
+      "Context+Teacher Pre-RL": {
+        "mean": 0.6924157738685608,
+        "median": 0.69065260887146,
+        "shuffled_person_mean": 0.5454137325286865
+      },
+      "Person-centered GRPO": {
+        "mean": 0.6887466907501221,
+        "median": 0.686526894569397,
+        "shuffled_person_mean": 0.5460245013237
+      },
+      "Cell-centered Student1 w1.64": {
+        "mean": 0.689544141292572,
+        "median": 0.6889662742614746,
+        "shuffled_person_mean": 0.544711709022522
+      },
+      "Activity-count reward Student1": {
+        "mean": 0.6873939037322998,
+        "median": 0.6873377561569214,
+        "shuffled_person_mean": 0.5423710346221924
+      }
+    },
+    "reasoning1~reasoning2": {
+      "Teacher": {
+        "mean": 0.5724210143089294,
+        "median": 0.5637344121932983,
+        "shuffled_person_mean": 0.4658598303794861
+      },
+      "SeqBoost": {
+        "mean": 0.5666256546974182,
+        "median": 0.5535053014755249,
+        "shuffled_person_mean": 0.46918436884880066
+      },
+      "Context+Teacher Pre-RL": {
+        "mean": 0.5735445618629456,
+        "median": 0.5640501976013184,
+        "shuffled_person_mean": 0.4780764877796173
+      },
+      "Person-centered GRPO": {
+        "mean": 0.5767428874969482,
+        "median": 0.5697897672653198,
+        "shuffled_person_mean": 0.4783148765563965
+      },
+      "Cell-centered Student1 w1.64": {
+        "mean": 0.577089786529541,
+        "median": 0.568435788154602,
+        "shuffled_person_mean": 0.4760530889034271
+      },
+      "Activity-count reward Student1": {
+        "mean": 0.5809252262115479,
+        "median": 0.5717484951019287,
+        "shuffled_person_mean": 0.4809008836746216
+      }
+    },
+    "persona~reasoning2": {
+      "Teacher": {
+        "mean": 0.6383265256881714,
+        "median": 0.6446709036827087,
+        "shuffled_person_mean": 0.49239787459373474
+      },
+      "SeqBoost": {
+        "mean": 0.6200180053710938,
+        "median": 0.6242053508758545,
+        "shuffled_person_mean": 0.48390644788742065
+      },
+      "Context+Teacher Pre-RL": {
+        "mean": 0.6385149955749512,
+        "median": 0.6411621570587158,
+        "shuffled_person_mean": 0.497039794921875
+      },
+      "Person-centered GRPO": {
+        "mean": 0.6417397856712341,
+        "median": 0.6491826772689819,
+        "shuffled_person_mean": 0.4971572756767273
+      },
+      "Cell-centered Student1 w1.64": {
+        "mean": 0.6400244235992432,
+        "median": 0.6475727558135986,
+        "shuffled_person_mean": 0.4948596954345703
+      },
+      "Activity-count reward Student1": {
+        "mean": 0.638277530670166,
+        "median": 0.6449331641197205,
+        "shuffled_person_mean": 0.49732357263565063
+      }
+    }
+  },
+  "text_sentiment": {
+    "persona": {
+      "Teacher": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9472295514511874,
+        "share_positive": 0.052770448548812667,
+        "mean_score_pos_minus_neg": 0.19933730363845825
+      },
+      "SeqBoost": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9589144364869958,
+        "share_positive": 0.041085563513004145,
+        "mean_score_pos_minus_neg": 0.18855620920658112
+      },
+      "Context+Teacher Pre-RL": {
+        "share_negative": 0.0011307953260459858,
+        "share_neutral": 0.9332830757632868,
+        "share_positive": 0.06558612891066717,
+        "mean_score_pos_minus_neg": 0.20115792751312256
+      },
+      "Person-centered GRPO": {
+        "share_negative": 0.0011307953260459858,
+        "share_neutral": 0.9468526196758387,
+        "share_positive": 0.05201658499811534,
+        "mean_score_pos_minus_neg": 0.19496147334575653
+      },
+      "Cell-centered Student1 w1.64": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.943083301922352,
+        "share_positive": 0.05653976630229928,
+        "mean_score_pos_minus_neg": 0.19844013452529907
+      },
+      "Activity-count reward Student1": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9513758009800226,
+        "share_positive": 0.04824726724462872,
+        "mean_score_pos_minus_neg": 0.19050702452659607
+      }
+    },
+    "reasoning1": {
+      "Teacher": {
+        "share_negative": 0.0007538635506973238,
+        "share_neutral": 0.9072747832642292,
+        "share_positive": 0.0919713531850735,
+        "mean_score_pos_minus_neg": 0.21671442687511444
+      },
+      "SeqBoost": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9170750094232943,
+        "share_positive": 0.08254805880135696,
+        "mean_score_pos_minus_neg": 0.20235086977481842
+      },
+      "Context+Teacher Pre-RL": {
+        "share_negative": 0.0,
+        "share_neutral": 0.8903128533735394,
+        "share_positive": 0.1096871466264606,
+        "mean_score_pos_minus_neg": 0.22177328169345856
+      },
+      "Person-centered GRPO": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9144364869958538,
+        "share_positive": 0.08556351300414625,
+        "mean_score_pos_minus_neg": 0.21208177506923676
+      },
+      "Cell-centered Student1 w1.64": {
+        "share_negative": 0.0007538635506973238,
+        "share_neutral": 0.9117979645684131,
+        "share_positive": 0.08744817188088956,
+        "mean_score_pos_minus_neg": 0.21686403453350067
+      },
+      "Activity-count reward Student1": {
+        "share_negative": 0.0,
+        "share_neutral": 0.9095363739163211,
+        "share_positive": 0.09046362608367886,
+        "mean_score_pos_minus_neg": 0.21537260711193085
+      }
+    },
+    "reasoning2": {
+      "Teacher": {
+        "share_negative": 0.0018846588767433095,
+        "share_neutral": 0.916321145872597,
+        "share_positive": 0.08179419525065963,
+        "mean_score_pos_minus_neg": 0.20160526037216187
+      },
+      "SeqBoost": {
+        "share_negative": 0.0003769317753486619,
+        "share_neutral": 0.9166980776479458,
+        "share_positive": 0.08292499057670562,
+        "mean_score_pos_minus_neg": 0.20253542065620422
+      },
+      "Context+Teacher Pre-RL": {
+        "share_negative": 0.0015077271013946476,
+        "share_neutral": 0.923105917828873,
+        "share_positive": 0.07538635506973237,
+        "mean_score_pos_minus_neg": 0.20649446547031403
+      },
+      "Person-centered GRPO": {
+        "share_negative": 0.0022615906520919715,
+        "share_neutral": 0.9287598944591029,
+        "share_positive": 0.06897851488880513,
+        "mean_score_pos_minus_neg": 0.1912742406129837
+      },
+      "Cell-centered Student1 w1.64": {
+        "share_negative": 0.002638522427440633,
+        "share_neutral": 0.9336600075386355,
+        "share_positive": 0.06370147003392386,
+        "mean_score_pos_minus_neg": 0.1882176697254181
+      },
+      "Activity-count reward Student1": {
+        "share_negative": 0.0018846588767433095,
+        "share_neutral": 0.9374293252921221,
+        "share_positive": 0.06068601583113457,
+        "mean_score_pos_minus_neg": 0.18361474573612213
+      }
+    }
+  }
+}

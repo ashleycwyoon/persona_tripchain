@@ -1,0 +1,131 @@
+# Context + context-Teacher run with the Student2 distribution weights re-measured for the
+# cell-centered distribution rewards (scripts/run_v2ctxt_s2cell.sh): as
+# framework_grpo_train_v2ctxt.yaml, only trip_mode, first_departure and trip_distance under
+# rewards.distribution differ.
+paths:
+  # GRPO training population: the v2 train split only. Evaluation uses
+  # configs/framework_v2_validation.yaml and configs/framework_v2_test.yaml.
+  # test_demographics is the generic Student1 input key read by tripchain/inference.py.
+  # Files under ${DATA_HOME}/tripchain_1015 are written by the upstream preprocessing (see README).
+  test_demographics: ${DATA_ROOT}/processed_v2ctx/train/demographics_with_residence.jsonl
+  location_whitelist: ${DATA_HOME}/tripchain_1015/processed/ktdb_location_whitelist.json
+  student1_adapter: ${OUTPUT_ROOT}/runs/student1_v2ctxt_sft/final
+  student2_adapter: ${OUTPUT_ROOT}/runs/student2_v2ctxt_sft/final
+  model_cache: ${HF_HUB_CACHE}
+  ground_truth_reference: ${DATA_ROOT}/processed_v2/train/ground_truth_tripmode.jsonl
+  location_lookup_source: ${DATA_HOME}/tripchain_1015/processed/train/location_dwell_mode_preference.jsonl
+  indexed_poi_catalog: ${DATA_HOME}/tripchain_1015/processed/testing/seoul_poi_catalog_by_admin_dong.parquet
+  poi_category_map: configs/poi_category_map.yaml
+  student1_predictions: ${OUTPUT_ROOT}/student1_predictions.jsonl
+  student2_predictions: ${OUTPUT_ROOT}/student2_predictions.jsonl
+  rollout_output: ${OUTPUT_ROOT}/rollouts.jsonl
+
+inference:
+  base_model: Qwen/Qwen3.5-2B
+  batch_size: 1
+  student1_max_new_tokens: 800
+  student2_max_new_tokens: 1200
+  temperature: 0.7
+  top_p: 0.9
+  max_retries: 2
+  retry_temperature: 0.2
+  seed: 42
+  # Must match how the Student adapters were trained (tripchain/common.py OUTPUT_ORDERS).
+  output_order: reason_first_tripmode
+  # Student2 validation failure: resample the unchanged prompt at `temperature`.
+  student2_resample_attempts: 4
+  # Still failing: regenerate Student1 then Student2 (scripts/repair_student2_failures.py).
+  student1_repair_rounds: 2
+
+poi_sampling:
+  master_pool_size: 50
+  active_pool_size: 5
+  seed: 2021
+  min_official_match_confidence: 0.80
+
+graphhopper:
+  base_url: http://localhost:8989
+  # Freeze to a date represented by the installed GTFS for reproducibility.
+  service_date: "2026-08-06"
+  timezone_offset: "+09:00"
+  timeout_sec: 30
+  max_cache_entries: 20000
+  modes: [walk, bike, bus, subway, car]
+  bike_walk_speedup: 3.0
+
+scheduling:
+  day_minutes: 1440
+  day_origin_hour: 3
+  # The last stay (any activity type) is the rest of the day (1440 - arrival), not a predicted dwell.
+  final_home_residual: true
+
+activity_constraints:
+  require_start_home: true
+  # A day may end away from home (3.7% of ground-truth days do, e.g. at work);
+  # the final stay of any type runs to the end of the day (final_home_residual).
+
+optimization:
+  max_states_per_signature: 48
+  max_total_states: 4096
+  selection_temperature: 0.35
+  selection_seed: 1030
+  diversity_time_bucket_min: 30
+  preference_weight: 1.0
+  distance_weight: 0.02
+  transfer_weight: 0.10
+  waiting_weight: 0.02
+  exact_candidate_attempts: 8
+  # A leg whose Student2 mode cannot be routed falls back to the ranked search at this cost.
+  mode_fallback_penalty: 2.0
+
+rewards:
+  weights:
+    activity: 1.0
+    location: 1.0
+    dwell: 1.0
+    # One main mode per trip (tripchain/trip_modes.py); replaces the person-level ranking.
+    trip_mode: 0.5
+    feasibility: 1.5
+    # Realized start of each activity vs this person's GT start (rewards.start_time_reward).
+    start_time: 1.0
+  # Population-level term (tripchain/distribution_reward.py, leave-one-out Q), added in
+  # scripts/prepare_policy_updates.py. P = v2 train ground truth.
+  # Weights: individual : distribution = 50:50 in within-group spread (RMS), measured by
+  # scripts/measure_distribution_weights.py on the v2 SFT train rollouts (18,574 people x 4):
+  # S1 individual 0.551 / sequence 0.670; S2 individual 0.218, trip_mode 0.148 and
+  # first_departure 0.360 share the S2 distribution part evenly in variance (corr 0.006).
+  distribution:
+    # 1.64 (2 x 0.82): Student1 sequence-pattern distribution, against the home-work-home
+    # concentration (validation: 38.8% vs GT 23.0%; v2/seqboost).
+    sequence: 1.64
+    # Student2 weights for individual : distribution = 50:50 in the advantage with cell-centered
+    # terms, the three terms sharing the distribution part evenly in variance
+    # (scripts/measure_distribution_weights.py on the v2ctxt train rollouts: individual 0.229,
+    # trip_mode 0.532, first_departure 0.542, trip_distance 0.334; weight = 0.229 / (sqrt(3) x spread)).
+    # With 0.94 / 0.43 / 1.04 the individual part is 10% of the variance.
+    trip_mode: 0.25
+    prior_strength: 20.0
+    clip: 3.0
+    first_departure: 0.24
+    # Trip-mode cells add the trip's distance band (same dong / <3 / 3-10 / 10+ km /
+    # outside Seoul; tripchain/trip_distance.py): band x occupation x age x gender,
+    # backed off via band x age x gender, band x age, band. Prior 100 had the best
+    # validation log-loss of the smoothed P (1.887 bits vs 2.333 demographic cells).
+    trip_mode_cells: distance
+    trip_mode_prior_strength: 100.0
+    # Trip distance band per trip in trip purpose x demographic cells (Student2);
+    # prior 100 had the best validation log-loss (2.054 bits; 20: 2.059, 300: 2.056).
+    trip_distance: 0.40
+    trip_distance_prior_strength: 100.0
+  dwell_tolerance_min: 120.0
+  start_time_tolerance_min: 60.0
+  future_discount: 0.95
+  feasibility:
+    bonus: 1.0
+    time_per_minute: 0.01
+    route_per_leg: 0.5
+    # Unroutable Student2 modes as a share of the day's legs (1.0 = every leg);
+    # a per-leg count penalized long days. tripchain/rewards.py feasibility_reward.
+    mode_share_penalty: 1.0
+    activity_per_violation: 0.5
+
