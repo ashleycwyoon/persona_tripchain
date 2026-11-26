@@ -1213,3 +1213,18 @@ def test_balanced_smoothing_does_not_reward_a_value_neither_side_has():
     balanced, _ = build_distribution_rewards(branches, [], truth, prior_strength=20.0, clip=3.0, balanced=True)
     assert plain[-1] > 0.5
     assert abs(balanced[-1]) < 0.05
+
+
+def test_teacher_label_must_agree_with_household_size():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("teacher_ctx", Path(__file__).parents[1] / "scripts" / "teacher_ctx.py")
+    teacher_ctx = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(teacher_ctx)
+    check = teacher_ctx.context_violation
+
+    assert check({"household": {"members": 2}}, ["She lives alone in an officetel."])
+    assert check({"household": {"members": 2}}, ["She lives with her husband."]) is None
+    assert check({"household": {"members": 1}}, ["Living alone in a villa."]) is None
+    assert check({"household": {"members": 3}}, ["He works alone and commutes by subway."]) is None
+    assert check({}, ["Living alone in a villa."]) is None

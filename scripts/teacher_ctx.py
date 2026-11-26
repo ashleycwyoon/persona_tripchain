@@ -14,12 +14,25 @@ module, then runs the original worker script.
     teacher  run_teacher_2gpu.py --python scripts/teacher_ctx_python ...
              (it starts `<python> teacher_worker.py ...`; teacher_ctx_python
              runs this file with those arguments)
+
+Answers the survey left blank are not in the inputs (scripts/build_context_v2.py omits
+them; nothing is filled in). A label that says a respondent lives alone although the
+household has several members fails validation and is generated again
+(context_violation). Labels written before this check are replaced with
+
+    select   python scripts/teacher_ctx.py --select-fix <teacher-prefix>
+             -> processed_v2ctx/teacher_input_fix/ (people whose label fails the check)
+    teacher  the same Teacher command on teacher_input_fix, --output-prefix <fix-prefix>
+    merge    python scripts/teacher_ctx.py --merge-fix <teacher-prefix> <fix-prefix>
+             (the replaced shards are kept as <shard>.before_fix)
 """
 
 from __future__ import annotations
 
 import json
+import re
 import runpy
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,6 +44,9 @@ from tripchain.paths import DATA_ROOT  # noqa: E402
 SFT_BUILD = DATA_ROOT / "processed_v2/sft_build"
 CTX = DATA_ROOT / "processed_v2ctx"
 INPUT_DIR = CTX / "teacher_input"
+FIX_DIR = CTX / "teacher_input_fix"
+INPUT_NAMES = ("demographics", "activity_sequence", "location_dwell_mode_preference")
+LABEL_TEXTS = ("professional_persona", "family_persona", "persona", "reasoning1", "reasoning2")
 
 RULE = (
     "3. The respondent section may list household, school and work facts from the\n"
@@ -40,6 +56,21 @@ RULE = (
     "   consistent with what is listed.\n\n"
 )
 ANCHOR = "Output EXACTLY these six XML blocks"
+
+_LIVE = r"(?:lives?|living|lived|resides?|residing)"
+ALONE = re.compile(
+    rf"\b{_LIVE} (?:alone|by (?:him|her|them)sel(?:f|ves)|on (?:his|her|their) own)\b"
+    r"|\b(?:single|one)[- ](?:person|member|adult) household\b"
+    r"|\bhousehold (?:consists|is made up) of (?:just|only) (?:him|her|one)\b",
+    re.IGNORECASE,
+)
+
+def context_violation(demographics: dict, texts: list[str]) -> str | None:
+    """What a Teacher label states against the household answers; None if nothing."""
+    members = (demographics.get("household") or {}).get("members")
+    if members and members >= 2 and ALONE.search(" ".join(texts)):
+        return f"the household has {members} members, so the respondent does not live alone"
+    return None
 
 
 def context_lines(d: dict) -> list[str]:
@@ -92,6 +123,16 @@ def patch() -> None:
 
     teacher.build_user_prompt = build_user_prompt
 
+    validate = teacher.validate_teacher_content
+
+    def validate_teacher_content(record: dict, output) -> None:
+        validate(record, output)
+        violation = context_violation(record["demographics"], [getattr(output, name) for name in LABEL_TEXTS])
+        if violation:
+            raise ValueError(violation)
+
+    teacher.validate_teacher_content = validate_teacher_content
+
 
 def build_inputs() -> None:
     ctx = {}
@@ -116,9 +157,69 @@ def build_inputs() -> None:
     print(f"{n} people -> {INPUT_DIR}")
 
 
+def read_rows(path: Path) -> list[dict]:
+    with path.open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def write_rows(path: Path, rows: list[dict]) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+
+
+def shard_paths(prefix: str) -> list[Path]:
+    paths = sorted(Path(prefix).parent.glob(Path(prefix).name + "_shard*.jsonl"))
+    if not paths:
+        raise SystemExit(f"no Teacher shards at {prefix}_shard*.jsonl")
+    return paths
+
+
+def label_violations(prefix: str) -> dict[str, str | None]:
+    """person_id -> violation of the current label (None when the label passes)."""
+    demographics = {str(r["person_id"]): r["demographics"] for r in read_rows(INPUT_DIR / "demographics.jsonl")}
+    return {
+        str(row["person_id"]): context_violation(
+            demographics[str(row["person_id"])], [row[name] for name in LABEL_TEXTS]
+        )
+        for path in shard_paths(prefix)
+        for row in read_rows(path)
+    }
+
+
+def select_fix(prefix: str) -> None:
+    chosen = {pid for pid, violation in label_violations(prefix).items() if violation}
+    FIX_DIR.mkdir(parents=True, exist_ok=True)
+    for name in INPUT_NAMES:
+        rows = [r for r in read_rows(INPUT_DIR / f"{name}.jsonl") if str(r["person_id"]) in chosen]
+        write_rows(FIX_DIR / f"{name}.jsonl", rows)
+    print(f"{len(chosen)} people whose label fails the check -> {FIX_DIR}")
+
+
+def merge_fix(prefix: str, fix_prefix: str) -> None:
+    fixed = {str(row["person_id"]): row for path in shard_paths(fix_prefix) for row in read_rows(path)}
+    expected = {str(r["person_id"]) for r in read_rows(FIX_DIR / "demographics.jsonl")}
+    if set(fixed) != expected:
+        raise SystemExit(f"fix shards cover {len(fixed)} of {len(expected)} selected people; finish the Teacher run")
+    for path in shard_paths(prefix):
+        backup = path.with_name(path.name + ".before_fix")
+        if not backup.exists():
+            shutil.copy2(path, backup)
+        rows = read_rows(path)
+        write_rows(path, [fixed.get(str(row["person_id"]), row) for row in rows])
+    left = sum(1 for violation in label_violations(prefix).values() if violation)
+    print(f"replaced {len(fixed)} labels; {left} labels still fail the check")
+
+
 def main() -> None:
     if sys.argv[1:] == ["--build-inputs"]:
         build_inputs()
+        return
+    if sys.argv[1:2] == ["--select-fix"] and len(sys.argv) == 3:
+        select_fix(sys.argv[2])
+        return
+    if sys.argv[1:2] == ["--merge-fix"] and len(sys.argv) == 4:
+        merge_fix(sys.argv[2], sys.argv[3])
         return
     if sys.argv[1:2] == ["--show-prompt"]:  # --show-prompt <person_id>
         patch()
