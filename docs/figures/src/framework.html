@@ -97,12 +97,12 @@
       <div class="row2">
         <div class="card datacard" id="data">
           <div class="ct" style="justify-content:center">Seoul KTDB 2021</div>
-          <div class="blk"><i data-ic="users" class="lg" style="color:#2F4F7F"></i><b>Person attributes</b><span>gender · age · occupation<br>can drive · home dong</span></div>
+          <div class="blk"><i data-ic="users" class="lg" style="color:#2F4F7F"></i><b>Person attributes</b><span>gender · age · occupation<br>can drive · home dong<br>household size · children / elderly<br>housing · income · cars<br>student · fixed workplace</span></div>
           <div class="blk"><i data-ic="route" class="lg" style="color:#2F4F7F"></i><b>Observed trip chain</b><span>activities · dong<br>dwell time · mode</span></div>
           <div><span class="pill" style="background:#E4E9F2;color:#2F4F7F">70 / 10 / 20 split</span></div>
         </div>
         <div class="card teacher" id="teacher">
-          <div class="ct"><i data-ic="chat" class="lg" style="color:var(--p1t)"></i><div>Teacher LLM<small>reads the ground truth, writes the reasons</small></div></div>
+          <div class="ct"><i data-ic="chat" class="lg" style="color:var(--p1t)"></i><div>Teacher LLM<small>reads the ground truth and household attributes</small></div></div>
           <div class="sub">Step-by-step reasons<br><span style="font-weight:500;font-size:11.5px">(pseudo-label data)</span></div>
           <ul class="b">
             <li>Persona: who the person is</li>
@@ -178,11 +178,11 @@
           <div class="gcols">
             <div class="gcol wide">
               <h4>Long-horizon Return (γ = 0.95)</h4>
-              <div class="formula"><b>R<sub>S2</sub></b> = Loc + Dwell + Mode + γ·(Feas + Start)<br><span class="dist ind">+ 1.04·D<sub>mode</sub> + 0.43·D<sub>departure</sub></span><br><b>R<sub>S1</sub></b> = Act + γ·(Loc + Dwell + Mode) + γ²·(Feas + Start)<br><span class="dist ind">+ 0.82·D<sub>sequence</sub></span><br><span style="color:var(--muted)">Later steps and the final outcome also count for earlier decisions · Feas = Feasibility · individual : distribution = 50 : 50 (in the score spread among one person's answers)</span></div>
+              <div class="formula"><b>R<sub>S2</sub></b> = Loc + Dwell + Mode + γ·(Feas + Start)<br><span class="dist ind">+ 0.25·D<sub>mode</sub> + 0.24·D<sub>departure</sub> + 0.40·D<sub>distance</sub></span><br><b>R<sub>S1</sub></b> = Act + γ·(Loc + Dwell + Mode) + γ²·(Feas + Start)<br><span class="dist ind">+ 0.32·D<sub>sequence</sub> + 0.66·D<sub>activity count</sub></span><br><span style="color:var(--muted)">Later steps and the final outcome also count for earlier decisions · Feas = Feasibility · individual : distribution = 50 : 50 (in the score spread among one person's answers)</span></div>
             </div>
             <div class="gcol">
               <h4>Group comparison (advantage)</h4>
-              <ul class="b"><li>Student②: compared within one Student① answer</li><li>Student①: compared among one person's answers</li><li>Minus the group mean, divided by the overall standard deviation</li></ul>
+              <ul class="b"><li>Student②: compared within one Student① answer</li><li>Student①: compared among one person's answers</li><li>Individual rewards: minus the person's mean. Distribution rewards: minus the cell's mean</li><li>Divided by the overall standard deviation</li></ul>
             </div>
             <div class="gcol">
               <h4>Clipped update</h4>
@@ -199,14 +199,16 @@
             <div><b>Mode</b> <span>main mode of each trip</span></div><div class="w">×0.5</div>
             <div><b>Feasibility</b> <span>feasible · violations</span></div><div class="w">×1.5</div>
             <div><b>Start time</b> <span>realized activity starts</span></div><div class="w">×1.0</div>
+            <div style="grid-column: span 2"><span>Location, Dwell, Mode and Start time are divided by the activities matched with the ground truth</span></div>
           </div>
           <div class="ct dct"><i data-ic="users" class="lg"></i><div>Distribution Rewards<small>shares compared among similar people</small></div></div>
           <div class="dformula">D = clip(log P − log Q, ±3)<br><span>P = train GT share · Q = rollout share<br>cells: occupation × age group × gender</span></div>
           <div class="rw">
-            <div><b>Sequence pattern</b> <span>Student①</span></div><div class="w dw">×0.82</div>
-            <div><b>Trip mode</b> <span>Student②</span></div><div class="w dw">×1.04</div>
-            <div><b>First departure</b> <span>Student②</span></div><div class="w dw">×0.43</div>
-            <div><b>Trip distance</b> <span>Student②</span></div><div class="w dw">optional</div>
+            <div><b>Sequence pattern</b> <span>Student①</span></div><div class="w dw">×0.32</div>
+            <div><b>Activity count</b> <span>Student①</span></div><div class="w dw">×0.66</div>
+            <div><b>Trip mode</b> <span>Student②</span></div><div class="w dw">×0.25</div>
+            <div><b>First departure</b> <span>Student②</span></div><div class="w dw">×0.24</div>
+            <div><b>Trip distance</b> <span>Student②</span></div><div class="w dw">×0.40</div>
           </div>
         </div>
       </div>
@@ -216,7 +218,7 @@
     <section class="panel p3" id="p3">
       <div class="ph"><h2>3. Testing (Inference)</h2><p>5,307 test people · never used in training</p></div>
       <div class="tests">
-        <div class="t" id="t1"><i data-ic="user" class="lg"></i><div class="tx">New person<small>(demographics + residence)</small></div></div>
+        <div class="t" id="t1"><i data-ic="user" class="lg"></i><div class="tx">New person<small>(demographics + household + residence)</small></div></div>
         <div class="t" id="t2"><div class="robots"><i data-ic="robot" class="lg" style="color:var(--blue)"></i><i data-ic="robot" class="lg" style="color:var(--green)"></i></div><div class="tx">Trained Student ① ②<small>(GRPO adapter)</small></div></div>
         <div class="t" id="t3"><i data-ic="route" class="lg"></i><div class="tx">Trip-chain generation<small>(with the decision trace)</small></div></div>
         <div class="t" id="t4"><i data-ic="map" class="lg"></i><div class="tx">Environment check<small>(POI · GraphHopper · schedule)</small></div></div>
