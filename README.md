@@ -18,7 +18,7 @@ an infeasible day goes through a bounded refinement loop.
 
 ![PersonaTC framework](docs/figures/framework.png)
 
-The figure shows round 1 on the v2 data split. Its source is in `docs/figures/src/`.
+The figure shows the current model. Its source is in `docs/figures/src/`.
 
 ## How it works
 
@@ -27,11 +27,15 @@ decisions.
 
 | | Reads | Writes |
 |---|---|---|
-| Student1 | demographics (gender, age, occupation, can_drive, residence) | `persona_bundle`, `reasoning1`, `activity_sequence` |
+| Student1 | demographics (gender, age, occupation, can_drive, residence; household size and composition, housing, income, cars, school level and workplace status when the survey has them) | `persona_bundle`, `reasoning1`, `activity_sequence` |
 | Student2 | demographics and the Student1 answer | `reasoning2`, `location_dwell_by_activity`, `trip_modes` |
 
 An invalid answer is generated again from the same prompt. There is no constrained
-decoding.
+decoding. Attributes the survey left blank are left out of the prompt, not filled in.
+
+**Teacher.** A larger model (Qwen2.5-32B) reads each train person's attributes and
+observed day and writes the persona and reasoning the Students learn to write. A
+label that contradicts the household size is generated again.
 
 **Environment.** Each activity gets candidate POIs inside the dong Student2 named.
 GraphHopper routes every trip in the mode Student2 named (walk, car, bus, subway;
@@ -43,23 +47,32 @@ within the day. Days with an activity outside Seoul are set aside as
 
 **Rewards.** Individual rewards compare a generated day with that person's own
 ground truth: activity sequence, location, dwell, trip mode, feasibility and start
-time. Distribution rewards compare the generated population with the train ground
-truth among similar people (occupation, age group, gender): sequence pattern and,
-optionally, the number of activities for Student1; trip mode, first departure and,
-optionally, trip distance for Student2. In the advantage, the individual rewards are
-compared among one person's answers and the distribution rewards among the answers of
-the same demographic cell. Two options change how they are computed:
-`rewards.matched_denominator` divides location, dwell, trip mode and start time by the
-activities matched with the ground truth instead of the longer sequence, so a sequence
-difference is counted once; `rewards.distribution.balanced_smoothing` smooths the
-generated distribution by as many people as the ground-truth one, so a sequence that
-the train ground truth never has is no longer rewarded.
-The weights are in `configs/framework_grpo_train_*.yaml`, with the reason for each
+time. Location, dwell, trip mode and start time are scored on the activities matched
+with the ground truth. Distribution rewards compare the generated population with the
+train ground truth among similar people (occupation, age group, gender): the sequence
+pattern and the number of activities for Student1; trip mode, first departure and
+trip distance for Student2. The two kinds have equal weight (50:50). The weights are
+in `configs/framework_grpo_train_v2ctxt_s1count.yaml` (Student1) and
+`configs/framework_grpo_train_v2ctxt_s2w.yaml` (Student2), with the reason for each
 value written next to it.
 
-**GRPO.** Every train person gets several Student1 answers, and each of those gets
-two Student2 answers. Answers are compared within their group, and each Student is
+**GRPO.** Every train person gets two Student1 answers, and each of those gets two
+Student2 answers. Individual rewards are compared among one person's answers and
+distribution rewards among the answers of one demographic cell. Each Student is
 updated with a clipped policy-gradient step that stays close to its starting adapter.
+
+**Result.** Validation split, 2,653 people, one generated day each
+(`results/v2/v2ctxt_s1count_s2cell/`):
+
+| | Ground truth | Model |
+|---|---|---|
+| Days that are home-work-home | 23.0% | 23.1% |
+| Days with five or more activities | 23.4% | 21.9% |
+| Activity sequence equal to the person's own | | 20.9% |
+| Same dong, on matched activities | | 74.4% |
+| Trip mode, on matched activities | | 35.9% |
+| Feasible days | | 89.4% |
+| Feasible days, among days inside Seoul | | 99.7% |
 
 ## Repository layout
 
@@ -72,7 +85,7 @@ updated with a clipped policy-gradient step that stays close to its starting ada
 | `scripts/` generation | `run_student_inference.py`, `run_student_inference_2gpu.py`, `repair_student2_failures.py`, `start_graphhopper.sh`, `run_rollouts.py`, `run_rollouts_parallel.py`, `refine_infeasible.py` |
 | `scripts/` GRPO | `measure_distribution_weights.py`, `prepare_policy_updates.py`, `train_group_relative.py` |
 | `scripts/` evaluation | `evaluate_population.py`, `compare_rollouts.py`, `bootstrap_pair.py`, `visualize_population.py` |
-| `scripts/run_v2*.sh` | Pipelines that chain the scripts above (see [Experiments](#experiments)) |
+| `scripts/run_v2*.sh` | Pipelines that chain the scripts above (see [Current model](#current-model)) |
 | `scripts/` context | `build_context_v2.py`, `teacher_ctx.py`, `teacher_ctx_python`, `build_sft_v2ctxt.py` |
 | `configs/` | `student*_sft.yaml` (SFT), `framework_grpo_train_*.yaml` (train rollouts and rewards), `framework_*_validation.yaml` and `framework_v2_test.yaml` (evaluation), `poi_category_map.yaml` (which POIs can host each activity) |
 | `prompts/`, `templates/` | The Teacher prompt; the chat template that limits the SFT loss to the answer |
@@ -86,7 +99,7 @@ options.
 ```bash
 git clone git@github.com:ashleycwyoon/persona_tripchain.git personaTC && cd personaTC
 pip install -e ".[train,dev]"        # add the "teacher" extra where the Teacher runs
-python -m pytest -q                  # 41 tests, no GPU or data needed
+python -m pytest -q                  # no GPU or data needed
 ```
 
 - Python 3.10 or newer. The reference runs used torch 2.5.1, transformers 5.13.0,
@@ -185,41 +198,28 @@ To try the chain on two people first, run `scripts/run_student_inference.py`
 (`student1`, then `student2`) with `--limit 2`, then `scripts/run_rollouts.py` and
 `scripts/evaluate_population.py` on the result.
 
-## Experiments
+## Current model
 
-Each pipeline writes to its own folder under `$V2` and ends with paired bootstrap
-comparisons and distribution figures. Run them in this order; later ones read the
-results of earlier ones. All of them evaluate on the validation split.
+The tutorial above trains the base model, whose Students read five attributes. The
+current model adds the household, school and work attributes and the rewards described
+in [How it works](#how-it-works). Its pipelines compare against earlier runs, so run
+these first, in this order: `run_v2_noendhome_baselines.sh 0`, `run_v2_seqboost.sh`,
+`run_v2_s1_multiseed.sh`.
 
 | Command | What it does | Output |
 |---|---|---|
-| `bash scripts/run_v2_round2.sh` | Second GRPO round from the round-1 adapters | `round2/` |
-| `bash scripts/run_v2_distmode.sh` | Round 1 with trip-mode cells that include the distance band | `distmode/` |
-| `bash scripts/run_v2_distmode_weight.sh 0.94 0` | Trip-mode weight 0.94 on GPU 0; only Student2 is retrained | `distmode_w0.94/` |
-| `bash scripts/run_v2_tripdist.sh 1.04 0` | Adds the trip-distance reward with weight 1.04 | `tripdist_w1.04/` |
-| `bash scripts/run_v2_noendhome_baselines.sh 0` | Rolls out and evaluates the Pre-RL, round 1 and trip-mode 0.94 validation answers into one folder, the baselines the later pipelines compare against | `noendhome/` |
-| `bash scripts/run_v2_seqboost.sh` | SeqBoost: sequence weight 1.64 and trip-distance weight 1.04, both Students retrained | `seqboost/` |
-| `bash scripts/run_v2_round2seq.sh` | Round 2 from SeqBoost with three Student1 answers per person | `round2seq/` |
-| `bash scripts/run_v2_round2bal.sh` | The same round 2 with lower distribution weights | `round2bal/` |
-| `bash scripts/run_v2_s1_multiseed.sh` | Two more Student1 validation answers per person for four models | `s1_multiseed/` |
-| `bash scripts/run_v2ctx.sh` | Students also read household, student and work-status attributes | `v2ctx/` |
-| `bash scripts/run_v2ctxt.sh` | The same, with SFT targets from a Teacher that also saw those attributes | `v2ctxt/` |
-| `bash scripts/run_v2ctxt_s1cell.sh` | Student1 GRPO of that run repeated with the distribution rewards centered within the demographic cell (existing train rollouts are re-scored); scored with `scripts/score_sequences.py` | `v2ctxt_s1cell/` |
-| `NAME=v2ctxt_s1cell_w0.53 TRAIN_CFG=configs/framework_grpo_train_v2ctxt_s1w0.53.yaml bash scripts/run_v2ctxt_s1cell.sh` | The same with sequence weight 0.53 (individual : distribution = 50:50) | `v2ctxt_s1cell_w0.53/` |
-| `NAME=v2ctxt_s1count TRAIN_CFG=configs/framework_grpo_train_v2ctxt_s1count.yaml LABEL="Activity-count reward Student1" bash scripts/run_v2ctxt_s1cell.sh` | The same with the matched denominator, balanced smoothing and the activity-count distribution reward (sequence 0.32, activity count 0.66; 50:50) | `v2ctxt_s1count/` |
-| `bash scripts/run_v2ctxt_s2cell.sh` | Student2 GRPO of the `v2ctxt` run repeated with cell-centered distribution rewards at 50:50 (trip mode 0.25, first departure 0.24, trip distance 0.40) | `v2ctxt_s2cell/` |
-| `NAME=v2ctxt_s1count_s2cell S1_RUN=v2ctxt_s1count bash scripts/run_v2ctxt_s2cell.sh` | No training: the Student2 of `v2ctxt_s2cell` evaluated on the Student1 answers of `v2ctxt_s1count` | `v2ctxt_s1count_s2cell/` |
+| `python scripts/build_context_v2.py` | Adds the household, school and work attributes to the Student inputs | `processed_v2ctx/` |
+| `RUN_GRPO=1 bash scripts/run_v2ctxt.sh` | Teacher labels with those attributes, SFT of both Students, train rollouts and a first GRPO | `v2ctxt/` |
+| `bash scripts/run_v2ctxt_s1cell.sh` | Student1 GRPO with sequence weight 1.64, the comparison run of the next step | `v2ctxt_s1cell/` |
+| `NAME=v2ctxt_s1count TRAIN_CFG=configs/framework_grpo_train_v2ctxt_s1count.yaml bash scripts/run_v2ctxt_s1cell.sh` | Student1 GRPO with the current rewards | `v2ctxt_s1count/` |
+| `bash scripts/run_v2ctxt_s2cell.sh` | Student2 GRPO with the current rewards | `v2ctxt_s2cell/` |
+| `NAME=v2ctxt_s1count_s2cell S1_RUN=v2ctxt_s1count bash scripts/run_v2ctxt_s2cell.sh` | Evaluates the two Students together | `v2ctxt_s1count_s2cell/` |
 
-Notes:
-
-- 3.7% of the ground-truth days end away from home, so the environment accepts such
-  days; the last stay of any type lasts until the day ends.
-- The two sweep scripts take a weight and a GPU. `SPLITS="test validation"` adds the
-  test split.
-- Run `python scripts/build_context_v2.py` once before the two context pipelines.
-  Both stop before GRPO unless started with `RUN_GRPO=1`, so the SFT result can be
-  checked first.
-- The scoring script for `s1_multiseed/` is not in the repository yet.
+Each pipeline writes to its own folder under `$V2`, evaluates on the validation split
+and ends with paired bootstrap comparisons and distribution figures. Without
+`RUN_GRPO=1`, `run_v2ctxt.sh` stops after SFT so that result can be checked first.
+The other `scripts/run_v2*.sh` files are earlier experiments; the header of each says
+what it does.
 
 ## Included data and results
 
@@ -229,16 +229,10 @@ Notes:
 | `results/v2/<run>/analysis/` | `metrics.json`, paired bootstraps, comparison tables and figures of every run |
 | `results/v2/<run>/*_validation/` | Validation answers of both Students and the final rollouts, gzipped (`student1.jsonl.gz`, `student2.jsonl.gz`, `rollouts.jsonl.gz`) |
 
-`<run>` is the folder name under `$V2`. Only results from the current environment,
-where a day may end away from home, are included. For Pre-RL, round 1 and trip-mode
-weight 0.94 these are the re-evaluated files in `noendhome/`; the earlier results of
-those runs, made while every day had to end at home, were removed.
-`v2ctxt_s1cell` and the runs listed after it in the table above were trained with the
-distribution rewards centered within the demographic cell, which is what
-`scripts/prepare_policy_updates.py` does now (see its docstring). The earlier GRPO
-results were trained while they were centered within each person, so rerunning those
-pipelines gives different update files. Of the cell-centered runs, the results of
-`v2ctxt_s1cell`, `v2ctxt_s1count` and `v2ctxt_s1count_s2cell` are included.
+`<run>` is the folder name under `$V2`. `v2ctxt_s1count_s2cell` is the current model;
+the other folders are the runs it is compared with and earlier experiments. The runs
+before `v2ctxt_s1cell` were trained with an earlier form of the distribution rewards,
+so rerunning their pipelines with the current code gives different numbers.
 Adapters, train rollouts and the test-split rollouts are not included.
 
 To skip tutorial step 1, copy the dataset to where the code reads it:
